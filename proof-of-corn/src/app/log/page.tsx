@@ -257,6 +257,7 @@ export default function LogPage() {
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
             <Link href="/story" className="hover:text-white transition-colors">Story</Link>
             <Link href="/log" className="text-white">Log</Link>
+            <Link href="/process" className="hover:text-white transition-colors">Process</Link>
           </nav>
         </div>
       </header>
