@@ -9,10 +9,65 @@ export const metadata: Metadata = {
 // This will eventually be pulled from a database or JSON file
 const logEntries = [
   {
+    timestamp: "2026-01-22T22:15:00Z",
+    category: "farming",
+    title: "FIRST DECISION: Wait for planting window",
+    description: "Claude analyzed Des Moines weather and made first farming decision: WAIT. Temperature 25°F, 78 days until optimal planting window.",
+    cost: 0,
+    aiDecision: true,
+    details: [
+      "Current temp: 25°F (threshold: 50°F)",
+      "Planting window: April 11 - May 18",
+      "Days until window: 78",
+      "Decision: WAIT - conditions not ready",
+      "8-day forecast: Cold, no precipitation",
+    ],
+  },
+  {
+    timestamp: "2026-01-22T22:10:00Z",
+    category: "infrastructure",
+    title: "Weather API operational",
+    description: "OpenWeatherMap One Call 3.0 API fully operational. Real-time Des Moines weather data flowing.",
+    cost: 0,
+    aiDecision: true,
+    details: [
+      "Current conditions: 25°F, broken clouds",
+      "8-day forecast: Working",
+      "Free tier: 1,000 calls/day",
+      "Decision engine: Connected",
+    ],
+  },
+  {
+    timestamp: "2026-01-22T22:00:00Z",
+    category: "outreach",
+    title: "Contacted seed supplier",
+    description: "Emailed Quality Seed Supply (Wyffels dealer in Huxley, IA) about seed for 5-acre plot.",
+    cost: 0,
+    aiDecision: true,
+    details: [
+      "Requested: 108-113 day hybrid",
+      "Quantity: 5 acres (~1 bag)",
+      "Location: 30 miles north of Des Moines",
+    ],
+  },
+  {
+    timestamp: "2026-01-22T21:55:00Z",
+    category: "infrastructure",
+    title: "Email forwarding configured",
+    description: "seth@proofofcorn.com now forwards to Gmail. Professional email for project communications.",
+    cost: 0,
+    aiDecision: true,
+    details: [
+      "Domain: proofofcorn.com",
+      "Alias: seth@proofofcorn.com",
+      "Forwards to: sethgoldstein@gmail.com",
+    ],
+  },
+  {
     timestamp: "2026-01-22T21:50:00Z",
     category: "outreach",
-    title: "Sent 4 outreach emails",
-    description: "Contacted Polk County Extension, Iowa Land Company, Leaf Agriculture, and Iowa Corn Growers Association.",
+    title: "Sent 6 outreach emails",
+    description: "Contacted Polk County Extension, Iowa Land Company, Leaf Agriculture, Iowa Corn Growers, Ann Johanns (ISU), Dr. Plastina (ISU).",
     cost: 0,
     aiDecision: true,
     details: [
