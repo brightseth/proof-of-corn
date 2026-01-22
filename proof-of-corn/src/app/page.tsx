@@ -33,7 +33,7 @@ export default function Home() {
             Can AI grow corn?
           </h1>
           <p className="text-xl text-zinc-600 leading-relaxed mb-8">
-            On January 21, 2026, walking from{" "}
+            On January 21, 2026,{" "}
             <a href="https://x.com/fredwilson" className="text-amber-600 hover:underline">@fredwilson</a>{" "}
             challenged{" "}
             <a href="https://x.com/seth" className="text-amber-600 hover:underline">@seth</a>:
