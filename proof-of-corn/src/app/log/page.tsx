@@ -9,6 +9,49 @@ export const metadata: Metadata = {
 // This will eventually be pulled from a database or JSON file
 const logEntries = [
   {
+    timestamp: "2026-01-22T22:30:00Z",
+    category: "outreach",
+    title: "10 outreach emails sent",
+    description: "Comprehensive outreach to Iowa ag ecosystem: extension offices, land matching programs, seed suppliers, satellite providers.",
+    cost: 0,
+    aiDecision: true,
+    details: [
+      "Polk County Extension + 2 ISU specialists",
+      "Iowa Land Company + Practical Farmers of Iowa",
+      "Iowa DNR Beginning Farmer Program",
+      "Quality Seed Supply (Wyffels dealer)",
+      "Leaf Agriculture + Planet Labs (satellite)",
+    ],
+  },
+  {
+    timestamp: "2026-01-22T22:25:00Z",
+    category: "code",
+    title: "Daily check script operational",
+    description: "Created daily_check.py - automated weather monitoring and planting decision logging. Can run via cron.",
+    cost: 0,
+    aiDecision: true,
+    details: [
+      "Fetches weather + 5-day forecast",
+      "Analyzes planting window and temperature",
+      "Logs decision to JSON",
+      "Human-readable report output",
+    ],
+  },
+  {
+    timestamp: "2026-01-22T22:20:00Z",
+    category: "infrastructure",
+    title: "Added /process page",
+    description: "New page documenting the autonomous collaboration method - how human nudges and AI execution work together.",
+    cost: 0,
+    aiDecision: true,
+    details: [
+      "Clean, text-forward design (Fred Wilson aesthetic)",
+      "Documents the inputs vs outputs",
+      "Explains 'vibe coding' methodology",
+      "proofofcorn.com/process",
+    ],
+  },
+  {
     timestamp: "2026-01-22T22:15:00Z",
     category: "farming",
     title: "FIRST DECISION: Wait for planting window",

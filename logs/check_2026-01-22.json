@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-01-22T14:24:54.533834",
+  "location": "Des Moines, Iowa",
+  "current": {
+    "temp": 24.06,
+    "feels_like": 11.46,
+    "humidity": 51,
+    "conditions": "few clouds",
+    "wind_speed": 19.57
+  },
+  "forecast_5day": {
+    "precip_total_inches": 0.0,
+    "temps": [
+      [
+        3.52,
+        29.97
+      ],
+      [
+        -7.71,
+        2.43
+      ],
+      [
+        -3.3,
+        6.82
+      ],
+      [
+        6.08,
+        16.75
+      ],
+      [
+        4.62,
+        23.13
+      ]
+    ]
+  },
+  "analysis": {
+    "window_status": "BEFORE_WINDOW (78 days until April 11)",
+    "in_window": false,
+    "temp_ready": false,
+    "days_until_window": 78
+  },
+  "decision": {
+    "action": "WAIT",
+    "rationale": "BEFORE_WINDOW (78 days until April 11)"
+  }
+}
