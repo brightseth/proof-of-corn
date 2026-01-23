@@ -1,0 +1,24 @@
+{
+  "name": "farmer-fred",
+  "version": "1.0.0",
+  "description": "Autonomous agricultural agent for Proof of Corn",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "types": "wrangler types",
+    "login": "wrangler login",
+    "check": "curl -X POST http://localhost:8787/check",
+    "weather": "curl http://localhost:8787/weather"
+  },
+  "keywords": ["cloudflare", "workers", "agent", "agriculture", "ai"],
+  "author": "Proof of Corn",
+  "license": "MIT",
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@cloudflare/workers-types": "^4.20260123.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.60.0"
+  }
+}
