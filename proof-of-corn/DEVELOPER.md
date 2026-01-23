@@ -26,7 +26,7 @@ proof-of-corn/src/lib/logData.ts
 
 This file contains the `logEntries` array that is used by:
 - The `/log` page (decision log display)
-- The `/rss` feed (RSS 2.0 feed)
+- The `/rss.xml` feed (RSS 2.0 feed)
 
 ### Entry Structure
 
@@ -69,7 +69,7 @@ export const logEntries: LogEntry[] = [
     timestamp: "2026-01-24T14:30:00Z",  // Current time in ISO 8601
     category: "infrastructure",
     title: "RSS feed deployed",
-    description: "RSS 2.0 feed now live at /rss. All decision log entries automatically syndicated with proper metadata.",
+    description: "RSS 2.0 feed now live at /rss.xml. All decision log entries automatically syndicated with proper metadata.",
     cost: 0,
     aiDecision: true,
   },
@@ -95,8 +95,8 @@ npm run dev
 # Visit: http://localhost:3000/log
 
 # Check the RSS feed
-# Visit: http://localhost:3000/rss
-# Or: curl http://localhost:3000/rss
+# Visit: http://localhost:3000/rss.xml
+# Or: curl http://localhost:3000/rss.xml
 ```
 
 ### Examples
@@ -151,7 +151,7 @@ The RSS feed is automatically generated from the decision log entries. It follow
 ### Feed URL
 
 ```
-https://proofofcorn.com/rss
+https://proofofcorn.com/rss.xml
 ```
 
 ### Implementation Details
@@ -159,7 +159,7 @@ https://proofofcorn.com/rss
 **Files involved**:
 - `src/lib/rss.ts` - RSS feed generator
 - `src/lib/rss.test.ts` - Comprehensive tests (15 test cases)
-- `src/app/rss/route.ts` - Next.js route handler
+- `src/app/rss.xml/route.ts` - Next.js route handler
 - `src/lib/logData.ts` - Shared data source
 
 **Features**:
@@ -268,7 +268,7 @@ npm run build
 npm start
 
 # Test RSS endpoint
-curl http://localhost:3000/rss
+curl http://localhost:3000/rss.xml
 ```
 
 The RSS route is configured with `export const dynamic = 'force-static'` to ensure it's generated at build time.
@@ -332,4 +332,4 @@ npm run lint         # Run ESLint
 
 ---
 
-**Remember**: When you add a new decision log entry in `src/lib/logData.ts`, it automatically updates both the `/log` page AND the `/rss` feed. No additional steps needed!
+**Remember**: When you add a new decision log entry in `src/lib/logData.ts`, it automatically updates both the `/log` page AND the `/rss.xml` feed. No additional steps needed!

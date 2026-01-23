@@ -112,7 +112,7 @@ proof-of-corn/
         │   ├── page.tsx           # Home
         │   ├── story/page.tsx     # Origin story
         │   ├── log/page.tsx       # Decision log
-        │   ├── rss/route.ts       # RSS 2.0 feed
+        │   ├── rss.xml/route.ts   # RSS 2.0 feed
         │   └── process/page.tsx   # How it was built
         └── lib/
             ├── logData.ts         # Shared decision log data
@@ -156,7 +156,7 @@ It started with a conversation between two friends walking through San Francisco
 - **Website**: [proofofcorn.com](https://proofofcorn.com)
 - **The Story**: [proofofcorn.com/story](https://proofofcorn.com/story)
 - **Decision Log**: [proofofcorn.com/log](https://proofofcorn.com/log)
-- **RSS Feed**: [proofofcorn.com/rss](https://proofofcorn.com/rss) - Subscribe to get updates
+- **RSS Feed**: [proofofcorn.com/rss.xml](https://proofofcorn.com/rss.xml) - Subscribe to get updates
 
 ---
 

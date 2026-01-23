@@ -2,7 +2,7 @@
  * RSS Feed Route Handler
  *
  * Generates RSS 2.0 feed from decision log entries.
- * Accessible at https://proofofcorn.com/rss
+ * Accessible at https://proofofcorn.com/rss.xml
  */
 
 import { generateRSSFeed } from '@/lib/rss';
@@ -12,7 +12,7 @@ import { logEntries } from '@/lib/logData';
 export const dynamic = 'force-static';
 
 /**
- * GET /rss
+ * GET /rss.xml
  * Returns RSS 2.0 XML feed
  */
 export async function GET() {

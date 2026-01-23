@@ -83,7 +83,7 @@ export function generateRSSFeed(logEntries: LogEntry[]): string {
     <description>${escapeXML(feedDescription)}</description>
     <language>en-us</language>
     <lastBuildDate>${lastBuildDate}</lastBuildDate>
-    <atom:link href="${siteURL}/rss" rel="self" type="application/rss+xml" />
+    <atom:link href="${siteURL}/rss.xml" rel="self" type="application/rss+xml" />
 `;
 
   // Add items for each log entry
