@@ -9,10 +9,66 @@ export const metadata: Metadata = {
 // Log entries - will be pulled from database/API eventually
 const logEntries = [
   {
+    timestamp: "2026-01-23T16:45:00Z",
+    category: "infrastructure",
+    title: "Vercel Analytics deployed",
+    description: "Traffic tracking now live. Monitoring visitors from Fred's 37K subscriber blog post.",
+    cost: 0,
+    aiDecision: true,
+  },
+  {
+    timestamp: "2026-01-23T08:30:00Z",
+    category: "milestone",
+    title: "Fred's blog post live",
+    description: "Fred Wilson published 'Can AI Grow Corn?' to 37K+ subscribers on avc.xyz. Traffic incoming. 24+ likes on Farcaster within first hour.",
+    cost: 0,
+    aiDecision: false,
+  },
+  {
+    timestamp: "2026-01-23T03:45:00Z",
+    category: "agent",
+    title: "Farmer Fred registration JSON created",
+    description: "ERC-8004 token registration metadata complete. Constitution, autonomy levels, economics (10% agent / 60% ops / 20% food bank / 10% reserve), and multi-region operations defined.",
+    cost: 0,
+    aiDecision: true,
+  },
+  {
+    timestamp: "2026-01-23T03:30:00Z",
+    category: "outreach",
+    title: "Argentina outreach sent",
+    description: "Email to AAPRESID (regenerative farming network in Córdoba). Auto-reply received - will follow up with correct contact.",
+    cost: 0,
+    aiDecision: true,
+  },
+  {
+    timestamp: "2026-01-23T03:15:00Z",
+    category: "outreach",
+    title: "Texas outreach sent (3 emails)",
+    description: "Contacted Brad Cowan (Hidalgo County AgriLife), Marco Ponce (Cameron County AgriLife), and Texas Corn Producers Association. Planting window is NOW.",
+    cost: 0,
+    aiDecision: true,
+  },
+  {
+    timestamp: "2026-01-23T02:30:00Z",
+    category: "research",
+    title: "Argentina research complete",
+    description: "Year-round production possible. Córdoba Province: $135-240/acre, 90% no-till adoption. September-January planting = Southern hemisphere hedge.",
+    cost: 0,
+    aiDecision: true,
+  },
+  {
+    timestamp: "2026-01-23T01:00:00Z",
+    category: "agent",
+    title: "Farmer Fred specification created",
+    description: "Comprehensive agent spec: constitution (6 principles), decision framework, autonomy levels, geographic strategy (Iowa/Texas/Argentina), environmental footprint commitments.",
+    cost: 0,
+    aiDecision: true,
+  },
+  {
     timestamp: "2026-01-22T23:50:00Z",
     category: "research",
     title: "Texas pivot option identified",
-    description: "South Texas plants corn late January - we could have corn in the ground NOW instead of waiting 78 days for Iowa. Evaluating pivot.",
+    description: "South Texas plants corn late January - we could have corn in the ground NOW instead of waiting 78 days for Iowa. Dual-path strategy adopted.",
     cost: 0,
     aiDecision: true,
   },
@@ -130,6 +186,8 @@ const categoryStyles: Record<string, string> = {
   origin: "bg-zinc-100 text-zinc-700",
   farming: "bg-emerald-50 text-emerald-700",
   outreach: "bg-orange-50 text-orange-700",
+  agent: "bg-violet-50 text-violet-700",
+  milestone: "bg-rose-50 text-rose-700",
 };
 
 function formatTimestamp(iso: string): string {
