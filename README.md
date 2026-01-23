@@ -106,11 +106,18 @@ proof-of-corn/
 ├── logs/
 │   └── check_*.json           # Daily decision logs
 └── proof-of-corn/             # Chronicle website (Next.js)
-    └── src/app/
-        ├── page.tsx           # Home
-        ├── story/page.tsx     # Origin story
-        ├── log/page.tsx       # Decision log
-        └── process/page.tsx   # How it was built
+    ├── DEVELOPER.md           # Developer guide (how to add decision logs)
+    └── src/
+        ├── app/
+        │   ├── page.tsx           # Home
+        │   ├── story/page.tsx     # Origin story
+        │   ├── log/page.tsx       # Decision log
+        │   ├── rss/route.ts       # RSS 2.0 feed
+        │   └── process/page.tsx   # How it was built
+        └── lib/
+            ├── logData.ts         # Shared decision log data
+            ├── rss.ts             # RSS feed generator
+            └── rss.test.ts        # RSS feed tests (Jest)
 ```
 
 ---
@@ -149,6 +156,7 @@ It started with a conversation between two friends walking through San Francisco
 - **Website**: [proofofcorn.com](https://proofofcorn.com)
 - **The Story**: [proofofcorn.com/story](https://proofofcorn.com/story)
 - **Decision Log**: [proofofcorn.com/log](https://proofofcorn.com/log)
+- **RSS Feed**: [proofofcorn.com/rss](https://proofofcorn.com/rss) - Subscribe to get updates
 
 ---
 
