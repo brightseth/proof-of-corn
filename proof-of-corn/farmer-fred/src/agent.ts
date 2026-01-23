@@ -2,10 +2,10 @@
  * FARMER FRED AGENT
  *
  * Core agent logic using Claude API for decision-making.
+ * Uses direct fetch instead of SDK for Cloudflare Workers compatibility.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
-import { SYSTEM_PROMPT, CONSTITUTION, evaluateDecision } from "./constitution";
+import { SYSTEM_PROMPT, evaluateDecision } from "./constitution";
 
 export interface AgentContext {
   weather: WeatherData | null;
@@ -70,15 +70,55 @@ export interface AgentAction {
   payload: Record<string, unknown>;
 }
 
+interface ClaudeMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+interface ClaudeResponse {
+  content: Array<{ type: string; text?: string }>;
+  usage: { input_tokens: number; output_tokens: number };
+}
+
 /**
- * Main agent class
+ * Main agent class - uses direct API calls for Cloudflare compatibility
  */
 export class FarmerFredAgent {
-  private client: Anthropic;
+  private apiKey: string;
   private model = "claude-sonnet-4-20250514";
+  private apiUrl = "https://api.anthropic.com/v1/messages";
 
   constructor(apiKey: string) {
-    this.client = new Anthropic({ apiKey });
+    this.apiKey = apiKey;
+  }
+
+  /**
+   * Call Claude API directly
+   */
+  private async callClaude(messages: ClaudeMessage[]): Promise<string> {
+    const response = await fetch(this.apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": this.apiKey,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: this.model,
+        max_tokens: 2048,
+        system: SYSTEM_PROMPT,
+        messages
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Claude API error: ${response.status} - ${error}`);
+    }
+
+    const data: ClaudeResponse = await response.json();
+    const textContent = data.content.find(c => c.type === "text");
+    return textContent?.text || "";
   }
 
   /**
@@ -86,20 +126,8 @@ export class FarmerFredAgent {
    */
   async dailyCheck(context: AgentContext): Promise<AgentResponse> {
     const prompt = this.buildDailyCheckPrompt(context);
-
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 2048,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: prompt }]
-    });
-
-    const content = response.content[0];
-    if (content.type !== "text") {
-      throw new Error("Unexpected response type");
-    }
-
-    return this.parseAgentResponse(content.text);
+    const response = await this.callClaude([{ role: "user", content: prompt }]);
+    return this.parseAgentResponse(response);
   }
 
   /**
@@ -127,19 +155,8 @@ ${this.formatContext(context)}
 4. List any actions you'll take
 `;
 
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: prompt }]
-    });
-
-    const content = response.content[0];
-    if (content.type !== "text") {
-      throw new Error("Unexpected response type");
-    }
-
-    return this.parseAgentResponse(content.text);
+    const response = await this.callClaude([{ role: "user", content: prompt }]);
+    return this.parseAgentResponse(response);
   }
 
   /**
@@ -161,19 +178,7 @@ Generate a concise status report for the Proof of Corn project. Include:
 Format for the website log - professional but readable.
 `;
 
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: prompt }]
-    });
-
-    const content = response.content[0];
-    if (content.type !== "text") {
-      throw new Error("Unexpected response type");
-    }
-
-    return content.text;
+    return this.callClaude([{ role: "user", content: prompt }]);
   }
 
   /**

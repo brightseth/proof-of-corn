@@ -11,17 +11,18 @@ crons = ["0 6 * * *"]
 AGENT_NAME = "Farmer Fred"
 AGENT_VERSION = "1.0.0"
 OPENWEATHER_API_URL = "https://api.openweathermap.org/data/3.0/onecall"
+# ANTHROPIC_API_KEY set via wrangler secret or .dev.vars
 
 # KV Namespace for caching
 [[kv_namespaces]]
 binding = "FARMER_FRED_KV"
-id = "PLACEHOLDER_KV_ID"
+id = "b5aabdc45c424d89995129b6af459ed8"
 
 # D1 Database for persistent data
 [[d1_databases]]
 binding = "FARMER_FRED_DB"
 database_name = "farmer-fred-db"
-database_id = "PLACEHOLDER_D1_ID"
+database_id = "6bbf2c23-c5cd-4229-be08-9db0a4a91632"
 
 # Durable Objects for stateful operations
 [durable_objects]
@@ -31,4 +32,4 @@ bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["FarmerFredState"]
+new_sqlite_classes = ["FarmerFredState"]

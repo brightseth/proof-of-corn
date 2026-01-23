@@ -59,7 +59,12 @@ export default {
           return json(getAgentInfo(env), corsHeaders);
 
         case "/health":
-          return json({ status: "healthy", timestamp: new Date().toISOString() }, corsHeaders);
+          return json({
+            status: "healthy",
+            timestamp: new Date().toISOString(),
+            hasAnthropicKey: !!env.ANTHROPIC_API_KEY,
+            anthropicKeyPrefix: env.ANTHROPIC_API_KEY ? env.ANTHROPIC_API_KEY.slice(0, 10) + "..." : "NOT SET"
+          }, corsHeaders);
 
         case "/constitution":
           return json(CONSTITUTION, corsHeaders);
