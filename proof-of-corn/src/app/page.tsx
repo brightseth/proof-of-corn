@@ -24,7 +24,7 @@ export default function Home() {
               <Link href="/story" className="hover:text-zinc-900 transition-colors">Story</Link>
               <Link href="/fred" className="hover:text-zinc-900 transition-colors">Farmer Fred</Link>
               <Link href="/log" className="hover:text-zinc-900 transition-colors">Log</Link>
-              <Link href="/improve" className="hover:text-zinc-900 transition-colors">Improve</Link>
+              <Link href="/community" className="hover:text-zinc-900 transition-colors">Community</Link>
               <Link href="/dashboard" className="hover:text-zinc-900 transition-colors">Dashboard</Link>
             </nav>
           </div>
