@@ -22,9 +22,10 @@ export default function Home() {
             <nav className="hidden sm:flex gap-4 text-xs md:text-sm text-zinc-500">
               <Link href="/" className="text-zinc-900">Home</Link>
               <Link href="/story" className="hover:text-zinc-900 transition-colors">Story</Link>
+              <Link href="/fred" className="hover:text-zinc-900 transition-colors">Farmer Fred</Link>
               <Link href="/log" className="hover:text-zinc-900 transition-colors">Log</Link>
-              <Link href="/fred" className="hover:text-zinc-900 transition-colors">Fred</Link>
-              <Link href="/budget" className="hover:text-zinc-900 transition-colors">Budget</Link>
+              <Link href="/improve" className="hover:text-zinc-900 transition-colors">Improve</Link>
+              <Link href="/dashboard" className="hover:text-zinc-900 transition-colors">Dashboard</Link>
             </nav>
           </div>
           {/* Fred Mini Widget - always visible */}

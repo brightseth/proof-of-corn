@@ -25,7 +25,8 @@
       "Bash(find:*)",
       "Bash(npm run deploy:*)",
       "Bash(vercel --prod:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(vercel ls:*)"
     ]
   }
 }
