@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import FredWidget from "@/components/FredWidget";
 import FredMiniWidget from "@/components/FredMiniWidget";
+import { ContactFred } from "@/components/ContactFred";
 
 export const metadata: Metadata = {
   title: "Proof of Corn",
@@ -183,7 +184,7 @@ export default function Home() {
       </section>
 
       {/* Links */}
-      <section className="px-6 py-16">
+      <section className="px-6 py-16 border-b border-zinc-200">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-6">Follow Along</h2>
           <div className="space-y-3">
@@ -217,6 +218,13 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Contact Fred */}
+      <section className="px-6 py-16 bg-white">
+        <div className="max-w-xl mx-auto">
+          <ContactFred />
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="px-6 py-8 border-t border-zinc-200">
         <div className="max-w-2xl mx-auto text-sm text-zinc-500">
@@ -229,7 +237,7 @@ export default function Home() {
           </p>
           <p>
             Want to help? Iowa land leads, ag expertise, vibe coders welcome:{" "}
-            <a href="mailto:seth@proofofcorn.com" className="text-amber-600 hover:underline">seth@proofofcorn.com</a>
+            <a href="mailto:fred@proofofcorn.com" className="text-amber-600 hover:underline">fred@proofofcorn.com</a>
           </p>
         </div>
       </footer>

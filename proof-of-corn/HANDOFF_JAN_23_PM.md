@@ -2,8 +2,8 @@
 
 ## 🔥 BIG NEWS: #1 on Hacker News
 
-**Post:** https://news.ycombinator.com/item?id=42735511
-- 160+ points, 108+ comments
+**Post:** https://news.ycombinator.com/item?id=46735511
+- 257 points, 190 comments (and climbing!)
 - Generating significant traffic and feedback
 
 ---
@@ -52,7 +52,7 @@
 ## Immediate TODOs for Next Session
 
 ### 1. Monitor HN Comments
-- Check https://news.ycombinator.com/item?id=42735511 for new feedback
+- Check https://news.ycombinator.com/item?id=46735511 for new feedback
 - Incorporate actionable suggestions
 - Update transparency page as needed
 
@@ -80,7 +80,7 @@
 | Fred API | https://farmer-fred.sethgoldstein.workers.dev |
 | Fred Page | https://proofofcorn.com/fred |
 | Transparency | https://proofofcorn.com/transparency |
-| HN Post | https://news.ycombinator.com/item?id=42735511 |
+| HN Post | https://news.ycombinator.com/item?id=46735511 |
 | GitHub | https://github.com/brightseth/proof-of-corn |
 | Vercel Analytics | https://vercel.com/slashvibe/proof-of-corn/analytics |
 

@@ -18,6 +18,7 @@ import { FarmerFredAgent, AgentContext } from "./agent";
 import { CONSTITUTION, SYSTEM_PROMPT } from "./constitution";
 import { fetchAllRegionsWeather, evaluatePlantingConditions } from "./tools/weather";
 import { createLogEntry, logDecision, logWeatherCheck, formatLogEntry, LogEntry } from "./tools/log";
+import { getHNContext, formatHNContextForAgent } from "./tools/hn";
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
@@ -67,6 +68,13 @@ export default {
           }, corsHeaders);
 
         case "/constitution":
+          // Return HTML for browsers, JSON for API clients
+          const accept = request.headers.get("Accept") || "";
+          if (accept.includes("text/html")) {
+            return new Response(renderConstitutionHTML(), {
+              headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" }
+            });
+          }
           return json(CONSTITUTION, corsHeaders);
 
         case "/system-prompt":
@@ -92,6 +100,9 @@ export default {
 
         case "/log":
           return await handleLog(env, corsHeaders);
+
+        case "/hn":
+          return await handleHN(env, corsHeaders);
 
         default:
           return json({ error: "Not found", path }, corsHeaders, 404);
@@ -262,6 +273,110 @@ async function handleLog(env: Env, headers: Record<string, string>): Promise<Res
   logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return json({ logs, count: logs.length }, headers);
+}
+
+function renderConstitutionHTML(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farmer Fred Constitution</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Georgia, serif; background: #fafafa; color: #1a1a1a; line-height: 1.7; }
+    .container { max-width: 720px; margin: 0 auto; padding: 4rem 2rem; }
+    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .subtitle { color: #666; margin-bottom: 2rem; }
+    h2 { font-size: 1.5rem; margin: 2rem 0 1rem; color: #b45309; border-bottom: 1px solid #e5e5e5; padding-bottom: 0.5rem; }
+    .origin { background: #fff; padding: 1.5rem; border-left: 4px solid #b45309; margin: 2rem 0; }
+    .origin p { margin: 0.5rem 0; }
+    .principle { background: #fff; padding: 1rem 1.5rem; margin: 1rem 0; border-radius: 4px; }
+    .principle h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .principle p { color: #555; font-size: 0.95rem; }
+    .autonomy-list { display: grid; gap: 1rem; }
+    .auto-section { background: #fff; padding: 1rem 1.5rem; border-radius: 4px; }
+    .auto-section h4 { color: #b45309; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 0.5rem; }
+    .auto-section ul { list-style: none; }
+    .auto-section li { padding: 0.25rem 0; padding-left: 1.5rem; position: relative; }
+    .auto-section li::before { content: "•"; position: absolute; left: 0; color: #b45309; }
+    .footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e5e5e5; color: #666; font-size: 0.9rem; }
+    a { color: #b45309; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>${CONSTITUTION.name}</h1>
+    <p class="subtitle">v${CONSTITUTION.version} • Ratified ${CONSTITUTION.ratified}</p>
+
+    <div class="origin">
+      <p><strong>Challenge:</strong> "${CONSTITUTION.origin.challenge}"</p>
+      <p><strong>Challenger:</strong> ${CONSTITUTION.origin.challenger}</p>
+      <p><strong>Response:</strong> "${CONSTITUTION.origin.response}"</p>
+      <p><strong>Date:</strong> ${CONSTITUTION.origin.date}</p>
+      <p><strong>Location:</strong> ${CONSTITUTION.origin.location}</p>
+    </div>
+
+    <h2>Core Principles</h2>
+    ${CONSTITUTION.principles.map(p => `
+    <div class="principle">
+      <h3>${p.name}</h3>
+      <p>${p.description}</p>
+    </div>
+    `).join('')}
+
+    <h2>Autonomy Levels</h2>
+    <div class="autonomy-list">
+      <div class="auto-section">
+        <h4>Autonomous Actions</h4>
+        <ul>${CONSTITUTION.autonomy.autonomous.map(a => `<li>${a}</li>`).join('')}</ul>
+      </div>
+      <div class="auto-section">
+        <h4>Requires Human Approval</h4>
+        <ul>${CONSTITUTION.autonomy.approvalRequired.map(a => `<li>${a}</li>`).join('')}</ul>
+      </div>
+      <div class="auto-section">
+        <h4>Immediate Escalation Triggers</h4>
+        <ul>${CONSTITUTION.autonomy.escalationTriggers.map(a => `<li>${a}</li>`).join('')}</ul>
+      </div>
+    </div>
+
+    <h2>Economics</h2>
+    <div class="principle">
+      <p><strong>Revenue Split:</strong></p>
+      <ul style="list-style: none; margin-top: 0.5rem;">
+        <li>• Agent (Fred): ${CONSTITUTION.economics.revenueShare.agent * 100}%</li>
+        <li>• Operations: ${CONSTITUTION.economics.revenueShare.operations * 100}%</li>
+        <li>• Food Bank Donation: ${CONSTITUTION.economics.revenueShare.foodBank * 100}%</li>
+        <li>• Reserve Fund: ${CONSTITUTION.economics.revenueShare.reserve * 100}%</li>
+      </ul>
+    </div>
+
+    <div class="footer">
+      <p>Farmer Fred is an autonomous agricultural agent for <a href="https://proofofcorn.com">Proof of Corn</a>.</p>
+      <p style="margin-top: 0.5rem;"><a href="/constitution">View as JSON</a> | <a href="/">API Root</a></p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+async function handleHN(env: Env, headers: Record<string, string>): Promise<Response> {
+  const lastCheckStr = await env.FARMER_FRED_KV.get("hn:lastCheck");
+  const lastCheckTime = lastCheckStr ? new Date(lastCheckStr) : undefined;
+
+  const hnContext = await getHNContext(lastCheckTime);
+  if (!hnContext) {
+    return json({ error: "Failed to fetch HN data" }, headers, 500);
+  }
+
+  await env.FARMER_FRED_KV.put("hn:lastCheck", new Date().toISOString());
+
+  return json({
+    ...hnContext,
+    formatted: formatHNContextForAgent(hnContext),
+    lastChecked: new Date().toISOString()
+  }, headers);
 }
 
 // ============================================
