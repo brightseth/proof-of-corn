@@ -18,8 +18,8 @@ export default function PageLayout({ children, title, subtitle }: PageLayoutProp
     { href: '/story', label: 'Story' },
     { href: '/fred', label: 'Fred' },
     { href: '/vision', label: 'Vision' },
+    { href: '/community', label: 'Community' },
     { href: '/log', label: 'Log' },
-    { href: '/stats', label: 'Stats' },
   ];
 
   return (

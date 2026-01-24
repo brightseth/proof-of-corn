@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(curl:*)",
+      "Bash(npx wrangler deploy)",
+      "Bash(npx wrangler secret:*)",
+      "Bash(dig:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx vercel --prod)",
+      "Bash(npx wrangler:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git checkout:*)",
+      "Bash(npx vercel whoami)",
+      "Bash(npx vercel:*)",
+      "WebSearch",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(git pull:*)",
+      "Bash(git rebase:*)",
+      "Bash(ls:*)",
+      "Bash(xargs:*)",
+      "Bash(git reset:*)",
+      "Bash(find:*)"
+    ]
+  }
+}
