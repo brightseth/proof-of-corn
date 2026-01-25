@@ -168,6 +168,15 @@ export default {
             headers: { ...corsHeaders, "Location": "https://proofofcorn.com/improve" }
           });
 
+        case "/commodities":
+          return await handleCommodities(env, corsHeaders);
+
+        case "/partnerships/evaluate":
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          return await handleEvaluatePartnerships(env, corsHeaders);
+
         default:
           return json({ error: "Not found", path }, corsHeaders, 404);
       }
@@ -1112,6 +1121,167 @@ async function extractLearningsFromEmail(email: Email, env: Env): Promise<Learni
   }
 
   return learnings;
+}
+
+async function handleCommodities(env: Env, headers: Record<string, string>): Promise<Response> {
+  // Corn futures tracking - parallel experiment to compare AI farming vs traditional investment
+  // Using CME Corn Futures (ZC) as baseline
+
+  const startDate = "2026-01-22"; // Project start date
+  const initialInvestment = 2500; // Same budget as actual farming
+
+  // Get current corn futures price (simplified - in production would use real API)
+  // For now, return structure with placeholder data
+  // TODO: Integrate with real commodities API (Quandl, Alpha Vantage, or CME)
+
+  const baselineData = {
+    investment: {
+      initial: initialInvestment,
+      date: startDate,
+      asset: "CME Corn Futures (ZC)",
+      contracts: "Equivalent position sizing"
+    },
+    current: {
+      // Placeholder - would fetch from API
+      pricePerBushel: 4.50, // Current corn price ($/bushel)
+      estimatedValue: 2500, // Current portfolio value
+      gainLoss: 0,
+      gainLossPercent: 0,
+      asOf: new Date().toISOString()
+    },
+    comparison: {
+      actualFarmingSpent: 12.99, // Domain + current spend
+      actualFarmingValue: 0, // No corn harvested yet
+      futuresValue: 2500,
+      advantage: "TBD - too early to compare"
+    },
+    note: "Commodities tracking is parallel experiment suggested by bwestergard on HN. This provides baseline ROI comparison for the AI farming experiment.",
+    dataSource: "Placeholder - real API integration pending",
+    hnThread: "https://news.ycombinator.com/item?id=42735511"
+  };
+
+  return json({
+    ...baselineData,
+    timestamp: new Date().toISOString()
+  }, headers);
+}
+
+async function handleEvaluatePartnerships(env: Env, headers: Record<string, string>): Promise<Response> {
+  // Evaluate current partnership leads against Fred's constitution
+  const agent = new FarmerFredAgent(env.ANTHROPIC_API_KEY);
+
+  // Get all completed email tasks (these are our active leads)
+  const taskKeys = await env.FARMER_FRED_KV.list({ prefix: "task:" });
+  const partnerships: any[] = [];
+
+  for (const key of taskKeys.keys) {
+    const task = await env.FARMER_FRED_KV.get(key.name, "json") as Task | null;
+    if (task && task.status === "completed" && task.type === "respond_email") {
+      // Get the related email for context
+      const email = task.relatedEmailId ?
+        await env.FARMER_FRED_KV.get(`email:${task.relatedEmailId}`, "json") as Email | null :
+        null;
+
+      partnerships.push({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        email: email ? {
+          from: email.from,
+          subject: email.subject,
+          body: email.body?.slice(0, 500)
+        } : null
+      });
+    }
+  }
+
+  // Build evaluation prompt for Claude
+  const evaluationPrompt = `You are Farmer Fred, evaluating partnership opportunities for Proof of Corn.
+
+YOUR CONSTITUTION (evaluate against these principles):
+1. FIDUCIARY DUTY - Act in project's best interest
+2. REGENERATIVE AGRICULTURE - Prioritize soil health, sustainability
+3. GLOBAL CITIZENSHIP - Not US-dependent, respect local communities
+4. TRANSPARENCY - Document all reasoning
+5. HUMAN-AGENT COLLABORATION - Partner with experienced farmers
+
+ACTIVE PARTNERSHIPS:
+${JSON.stringify(partnerships, null, 2)}
+
+TASK: Evaluate each partnership against the constitution. For each:
+1. Score fit (1-10) against each constitutional principle
+2. Assess risk/opportunity
+3. Identify blockers or concerns
+4. Recommend priority ranking (1 = pursue first)
+
+Respond in JSON:
+{
+  "evaluations": [
+    {
+      "id": "task-id",
+      "title": "partnership title",
+      "scores": {
+        "fiduciary": 1-10,
+        "regenerative": 1-10,
+        "global": 1-10,
+        "transparency": 1-10,
+        "collaboration": 1-10
+      },
+      "totalScore": sum,
+      "risks": ["list of risks"],
+      "opportunities": ["list of opportunities"],
+      "recommendation": "pursue/consider/decline",
+      "rationale": "why",
+      "priority": 1-3
+    }
+  ],
+  "overallRecommendation": "Which to pursue first and why"
+}`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      messages: [{ role: "user", content: evaluationPrompt }]
+    })
+  });
+
+  if (!response.ok) {
+    return json({ error: "Failed to evaluate partnerships" }, headers, 500);
+  }
+
+  const data: any = await response.json();
+  let evaluationText = data.content?.[0]?.text || "{}";
+
+  // Strip markdown code blocks if present
+  evaluationText = evaluationText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+
+  const evaluation = JSON.parse(evaluationText);
+
+  // Log the evaluation
+  const logEntry = createLogEntry(
+    "agent",
+    "Partnership Evaluation Complete",
+    `Fred evaluated ${partnerships.length} active partnerships.\n\nTop recommendation: ${evaluation.overallRecommendation}\n\n[See /partnerships/evaluate for full analysis]`
+  );
+  await env.FARMER_FRED_KV.put(
+    `log:${Date.now()}-eval`,
+    JSON.stringify(logEntry),
+    { expirationTtl: 60 * 60 * 24 * 90 }
+  );
+
+  return json({
+    ...evaluation,
+    timestamp: new Date().toISOString(),
+    partnershipsEvaluated: partnerships.length
+  }, headers);
 }
 
 // ============================================
