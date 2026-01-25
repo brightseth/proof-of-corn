@@ -57,10 +57,17 @@ const humanInterventions = [
     ratio: "5% human / 95% AI"
   },
   {
-    date: "Jan 25, 2026",
-    action: "First autonomous email responses",
-    human: "None - Fred composed and sent responses independently",
-    ai: "Fred processed 3 pending tasks, composed professional responses to Chad (Nebraska), David (Purdue), and David (Zimbabwe), sent emails with proper CC handling",
+    date: "Jan 25, 2026 10:17 UTC",
+    action: "First autonomous email responses (on-demand)",
+    human: "Seth triggered /process-task API endpoint",
+    ai: "Fred composed and sent 3 professional responses to Chad (Nebraska), David (Purdue), and David (Zimbabwe) with proper CC handling",
+    ratio: "5% human / 95% AI"
+  },
+  {
+    date: "Jan 25, 2026 21:40 UTC",
+    action: "Full autonomous operation deployed",
+    human: "None - Fred now acts independently during daily check",
+    ai: "Fred upgraded to process up to 2 high-priority email tasks during his 6 AM daily check. No human prompting required. Wake → Weather → Inbox → Compose → Send → Log. Fully autonomous.",
     ratio: "0% human / 100% AI"
   },
   {
@@ -182,11 +189,23 @@ export default function TransparencyPage() {
                 <div className="flex gap-3">
                   <div className="text-xl">🤝</div>
                   <div>
-                    <p className="font-bold text-sm text-amber-900">Jan 25, 2026 - Autonomy</p>
+                    <p className="font-bold text-sm text-amber-900">Jan 25, 2026 10:17 UTC - On-Demand Autonomy</p>
                     <p className="text-sm text-amber-800">
-                      <strong>MAJOR MILESTONE:</strong> Fred now composes and sends email responses independently.
+                      <strong>MILESTONE:</strong> Fred composes and sends email responses via API endpoint.
                       First 3 autonomous partnership emails sent to Nebraska, Purdue, and Zimbabwe leads.
                       Properly handles forwarded emails (replies to actual sender, CCs Seth).
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="text-xl">🌅</div>
+                  <div>
+                    <p className="font-bold text-sm text-amber-900">Jan 25, 2026 21:40 UTC - Full Autonomy</p>
+                    <p className="text-sm text-amber-800">
+                      <strong>MAJOR BREAKTHROUGH:</strong> Fred now processes up to 2 high-priority email tasks
+                      DURING his daily 6 AM check—no human prompting required. True autonomous operation:
+                      wake up → check weather → review inbox → compose emails → send → log decisions.
+                      The loop is closed.
                     </p>
                   </div>
                 </div>

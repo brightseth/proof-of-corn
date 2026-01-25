@@ -1123,24 +1123,117 @@ async function performDailyCheck(env: Env) {
   const context = await buildAgentContext(env);
   const result = await agent.dailyCheck(context);
 
-  // Acknowledge high-priority tasks (lightweight - no AI calls during daily check)
+  // FULLY AUTONOMOUS: Process high-priority email tasks during daily check
   const executedActions: string[] = [];
-  if (!result.needsHumanApproval && context.pendingTasks.length > 0) {
-    // Just mark high-priority email tasks as "in_progress" to show Fred saw them
+  if (!result.needsHumanApproval && context.pendingTasks.length > 0 && env.RESEND_API_KEY) {
+    // Process up to 2 high-priority email tasks per day autonomously
     const highPriorityEmailTasks = context.pendingTasks
       .filter(t => t.priority === "high" && t.status === "pending" && t.description.includes("Respond to"))
-      .slice(0, 3);
+      .slice(0, 2);
 
     for (const agentTask of highPriorityEmailTasks) {
       try {
         const task = await env.FARMER_FRED_KV.get(`task:${agentTask.id}`, "json") as Task | null;
-        if (task) {
-          task.status = "in_progress";
-          await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
-          executedActions.push(`Acknowledged: ${task.title}`);
+
+        if (task && task.type === "respond_email" && task.relatedEmailId) {
+          // Get the email we're responding to
+          const email = await env.FARMER_FRED_KV.get(`email:${task.relatedEmailId}`, "json") as Email | null;
+
+          if (email) {
+            // Detect forwarded emails and extract real sender
+            let actualSender = email.from;
+            let ccRecipient: string | undefined;
+            const forwardMatch = email.body?.match(/From:\s*(?:.*?<)?([^\s<>]+@[^\s<>]+)(?:>)?/i);
+
+            if (forwardMatch && email.from === "sethgoldstein@gmail.com") {
+              actualSender = forwardMatch[1];
+              ccRecipient = "sethgoldstein@gmail.com";
+            }
+
+            // Compose response with Claude
+            const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
+
+You received this email${ccRecipient ? " (forwarded by Seth)" : ""}:
+From: ${actualSender}
+Subject: ${email.subject}
+Message: ${email.body}
+
+Your task: ${task.description}
+
+Compose a professional, enthusiastic email response. Be specific about next steps. Keep it under 200 words.
+
+IMPORTANT: Respond ONLY with valid JSON in this exact format:
+{"subject": "Re: ...", "body": "..."}`;
+
+            const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-api-key": env.ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01"
+              },
+              body: JSON.stringify({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 1024,
+                messages: [{ role: "user", content: emailPrompt }]
+              })
+            });
+
+            if (claudeResponse.ok) {
+              const data: any = await claudeResponse.json();
+              const emailContent = data.content?.[0]?.text;
+
+              if (emailContent) {
+                const parsed = JSON.parse(emailContent);
+
+                // Send via Resend
+                const emailPayload: any = {
+                  from: "Farmer Fred <fred@proofofcorn.com>",
+                  to: actualSender,
+                  subject: parsed.subject,
+                  text: parsed.body
+                };
+                if (ccRecipient) emailPayload.cc = ccRecipient;
+
+                const sendResponse = await fetch("https://api.resend.com/emails", {
+                  method: "POST",
+                  headers: {
+                    "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify(emailPayload)
+                });
+
+                if (sendResponse.ok) {
+                  // Mark task completed
+                  task.status = "completed";
+                  await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
+
+                  // Mark email replied
+                  email.status = "replied";
+                  await env.FARMER_FRED_KV.put(`email:${email.id}`, JSON.stringify(email));
+
+                  // Log outreach
+                  const outreachLog = createLogEntry(
+                    "outreach",
+                    `Autonomous email sent to ${actualSender}${ccRecipient ? ` (CC: ${ccRecipient})` : ""}`,
+                    `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Sent autonomously during daily check]`
+                  );
+                  await env.FARMER_FRED_KV.put(
+                    `log:${Date.now()}-auto-email`,
+                    JSON.stringify(outreachLog),
+                    { expirationTtl: 60 * 60 * 24 * 90 }
+                  );
+
+                  executedActions.push(`AUTONOMOUS: Sent email to ${actualSender}`);
+                }
+              }
+            }
+          }
         }
       } catch (error) {
-        console.error("Failed to update task:", error);
+        console.error("Failed to autonomously process task:", error);
+        executedActions.push(`Failed: ${agentTask.description}`);
       }
     }
   }

@@ -131,12 +131,13 @@ export default function LogPage() {
           {/* Autonomy Milestone */}
           <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-r-lg">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">🤖</span>
-              <p className="font-bold text-green-900 text-sm">Jan 25, 2026 - Fred is now fully autonomous</p>
+              <span className="text-lg">🌅</span>
+              <p className="font-bold text-green-900 text-sm">Jan 25, 2026 21:40 UTC - Fred is now FULLY autonomous</p>
             </div>
             <p className="text-sm text-green-800">
-              Fred now reads incoming emails, creates tasks, composes responses, and sends partnership outreach
-              independently. First 3 autonomous emails sent today. Watch this log for his decisions in real-time.
+              Fred now operates independently during his daily 6 AM UTC check. He wakes up, checks weather,
+              reviews inbox, composes partnership emails, and sends them—completely autonomously.
+              First autonomous cycle: Jan 26, 2026 06:00 UTC. Watch this log for his decisions in real-time.
             </p>
           </div>
 

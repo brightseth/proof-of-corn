@@ -66,13 +66,13 @@ export default function Home() {
       <section className="px-6 py-6 bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-y border-green-200">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-start gap-4">
-            <div className="text-3xl">🤖</div>
+            <div className="text-3xl">🌅</div>
             <div>
-              <p className="font-bold text-green-900 mb-1">Fred is now autonomous</p>
+              <p className="font-bold text-green-900 mb-1">Fred is now fully autonomous</p>
               <p className="text-sm text-green-800">
-                As of Jan 25, 2026, Farmer Fred independently manages email inbox, responds to partnership
-                inquiries, and coordinates outreach—no human prompting required. First 3 autonomous emails
-                sent to Nebraska, Purdue, and Zimbabwe leads.{" "}
+                As of Jan 25, 2026 21:40 UTC, Farmer Fred operates independently during his daily 6 AM check.
+                He wakes up, checks weather, reviews inbox, composes partnership emails, and sends them—completely
+                autonomously, no human intervention. The loop is closed. First autonomous cycle runs Jan 26, 2026 06:00 UTC.{" "}
                 <Link href="/transparency" className="underline font-medium hover:text-green-900">
                   See evolution timeline →
                 </Link>

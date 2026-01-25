@@ -153,12 +153,14 @@ export default function FredPage() {
           {/* Evolution Milestone */}
           <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-r-lg">
             <div className="flex items-start gap-3">
-              <div className="text-2xl">🤝</div>
+              <div className="text-2xl">🌅</div>
               <div>
-                <p className="font-bold text-green-900 text-sm">NEW: Fred is now autonomous</p>
+                <p className="font-bold text-green-900 text-sm">NEW: Fred is now FULLY autonomous</p>
                 <p className="text-sm text-green-800">
-                  As of Jan 25, 2026, Fred independently reads emails, creates tasks, composes responses,
-                  and manages partnership outreach. <a href="/transparency" className="underline font-medium">View full evolution →</a>
+                  As of Jan 25, 2026 21:40 UTC, Fred operates completely independently. Every day at 6 AM UTC,
+                  he wakes up, checks weather across 3 regions, reviews his inbox, composes partnership emails,
+                  and sends them—no human prompting required. True autonomous operation.{" "}
+                  <a href="/transparency" className="underline font-medium">View full evolution →</a>
                 </p>
               </div>
             </div>
