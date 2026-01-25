@@ -21,11 +21,11 @@ export default function Home() {
             </Link>
             <nav className="hidden sm:flex gap-4 text-xs md:text-sm text-zinc-500">
               <Link href="/" className="text-zinc-900">Home</Link>
-              <Link href="/story" className="hover:text-zinc-900 transition-colors">Story</Link>
-              <Link href="/fred" className="hover:text-zinc-900 transition-colors">Farmer Fred</Link>
+              <Link href="/about" className="hover:text-zinc-900 transition-colors">About</Link>
+              <Link href="/fred" className="hover:text-zinc-900 transition-colors">Fred</Link>
+              <Link href="/dashboard" className="hover:text-zinc-900 transition-colors">Dashboard</Link>
               <Link href="/log" className="hover:text-zinc-900 transition-colors">Log</Link>
               <Link href="/community" className="hover:text-zinc-900 transition-colors">Community</Link>
-              <Link href="/dashboard" className="hover:text-zinc-900 transition-colors">Dashboard</Link>
             </nav>
           </div>
           {/* Fred Mini Widget - always visible */}
@@ -102,20 +102,26 @@ export default function Home() {
       <section className="px-6 py-16 border-b border-zinc-200 bg-white">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold mb-6">The Architecture</h2>
-          <pre className="text-[10px] sm:text-sm text-zinc-600 bg-zinc-50 p-4 sm:p-6 rounded-lg overflow-x-auto font-mono">
-{`┌─────────────────────────────────────────────────┐
-│              CLAUDE CODE (Brain)                │
-│  • Aggregates sensor data + weather forecasts   │
-│  • Makes planting, irrigation, harvest decisions│
-│  • Coordinates human operators                  │
-└─────────────────────────────────────────────────┘
-                        │
-       ┌────────────────┼────────────────┐
-       ▼                ▼                ▼
-   DATA INPUTS     ORCHESTRATION      OUTPUTS
-   • IoT sensors   • Custom farmer    • Decision log
-   • Weather API   • Seed supplier    • Commands
-   • Satellite     • Equipment        • Actual corn`}
+          <pre className="text-xs sm:text-sm text-zinc-700 bg-zinc-50 p-4 sm:p-6 rounded-lg overflow-x-auto font-mono leading-relaxed">
+{`
+    ╔═══════════════════════════════════════════╗
+    ║       CLAUDE CODE (Farm Manager)          ║
+    ║                                           ║
+    ║  → Aggregates sensor + weather data       ║
+    ║  → Makes planting/irrigation decisions    ║
+    ║  → Coordinates human operators            ║
+    ╚═══════════════════════════════════════════╝
+                       │
+         ┌─────────────┼─────────────┐
+         │             │             │
+         ▼             ▼             ▼
+
+    📊 INPUTS      🤝 PARTNERS     📋 OUTPUTS
+
+    • IoT sensors  • Farmers      • Decision log
+    • Weather API  • Suppliers    • Instructions
+    • Satellite    • Equipment    • Actual corn
+`}
           </pre>
         </div>
       </section>
