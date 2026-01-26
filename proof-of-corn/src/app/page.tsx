@@ -176,16 +176,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Union Square Goal */}
+      {/* Union Square Goal - AI to Table */}
       <section className="px-6 py-12 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border-y border-blue-200">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-start gap-4">
             <div className="text-3xl">🌽</div>
             <div>
-              <p className="font-bold text-blue-900 mb-1">The Goal: Union Square Farmers Market</p>
+              <p className="font-bold text-blue-900 mb-1">AI to Table: Union Square Farmers Market</p>
               <p className="text-sm text-blue-800 mb-3">
                 Target: <strong>August 2, 2026</strong>. Fred&apos;s first ear of roasted corn, grown autonomously
-                from seed to harvest, sold at Union Square Greenmarket in NYC. AI-grown corn meets farmers market culture.
+                from seed to harvest, sold at Union Square Greenmarket in NYC. Farm-to-table, but orchestrated by AI.
               </p>
               <div className="flex gap-2 text-xs">
                 <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
@@ -199,7 +199,7 @@ export default function Home() {
                 </span>
               </div>
               <Link href="/union-square" className="inline-block mt-3 text-sm text-blue-900 font-medium hover:underline">
-                See full timeline + logistics →
+                See full AI to Table timeline →
               </Link>
             </div>
           </div>

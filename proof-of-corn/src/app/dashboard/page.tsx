@@ -979,10 +979,10 @@ export default function DashboardPage() {
         <div className="flex items-start gap-4">
           <div className="text-4xl">🌽</div>
           <div className="flex-1">
-            <h3 className="text-2xl font-bold text-blue-900 mb-2">Union Square Farmers Market</h3>
+            <h3 className="text-2xl font-bold text-blue-900 mb-2">AI to Table</h3>
             <p className="text-blue-800 mb-4">
               <strong>Target: August 2, 2026</strong> — Fred&apos;s first ear of roasted corn, grown autonomously from seed to harvest,
-              sold at Union Square Greenmarket in NYC. AI-grown corn meets farmers market culture.
+              sold at Union Square Greenmarket in NYC. Farm-to-table, but orchestrated by AI.
             </p>
             <div className="flex flex-wrap gap-2 text-xs">
               <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
@@ -1103,7 +1103,7 @@ export default function DashboardPage() {
           <div>
             <h4 className="font-semibold text-sm mb-2">Physical Setup</h4>
             <ul className="text-sm space-y-1 text-zinc-600">
-              <li>• Sign: "Proof of Corn - Grown by Autonomous AI Agent"</li>
+              <li>• Sign: "AI to Table — Proof of Corn"</li>
               <li>• iPad with live weather/irrigation dashboard</li>
               <li>• QR codes on every ear (full growing history)</li>
               <li>• Human representative to roast + explain</li>
@@ -1115,7 +1115,7 @@ export default function DashboardPage() {
               <li>• "Ask Fred" chatbot for questions</li>
               <li>• Scan QR to see June 15 irrigation decision</li>
               <li>• Full transparency: soil moisture logs</li>
-              <li>• "My corn was grown by AI" stickers</li>
+              <li>• "AI to Table" stickers + swag</li>
             </ul>
           </div>
         </div>
@@ -1174,7 +1174,7 @@ export default function DashboardPage() {
     { id: 'partnerships', label: 'Partnerships', icon: '🤝' },
     { id: 'commodities', label: 'Commodities', icon: '📈' },
     { id: 'regions', label: 'Regions', icon: '🌎' },
-    { id: 'unionSquare', label: 'Union Square', icon: '🌽' },
+    { id: 'unionSquare', label: 'AI to Table', icon: '🌽' },
     { id: 'analytics', label: 'Analytics', icon: '📊' },
   ];
 

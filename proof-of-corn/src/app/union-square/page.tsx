@@ -3,8 +3,8 @@ import Link from "next/link";
 import PageLayout from "@/components/PageLayout";
 
 export const metadata: Metadata = {
-  title: "Union Square Goal | Proof of Corn",
-  description: "Farmer Fred's mission to sell his first ear of roasted corn at Union Square Farmers Market, NYC - August 2026.",
+  title: "AI to Table | Proof of Corn",
+  description: "AI to Table: Farmer Fred's mission to sell his first ear of roasted corn at Union Square Farmers Market, NYC - August 2026.",
 };
 
 export default function UnionSquarePage() {
@@ -15,11 +15,15 @@ export default function UnionSquarePage() {
         <div className="mb-12">
           <p className="text-amber-700 text-sm tracking-wide mb-4">THE GOAL</p>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
-            Union Square Farmers Market
+            AI to Table
           </h1>
-          <p className="text-xl text-zinc-600 leading-relaxed">
+          <p className="text-xl text-zinc-600 leading-relaxed mb-4">
             Target date: <strong>August 2, 2026</strong>. Farmer Fred's first ear of roasted corn,
             grown autonomously from seed to harvest, sold at Union Square Greenmarket in New York City.
+          </p>
+          <p className="text-lg text-zinc-500 leading-relaxed italic">
+            Farm-to-table, but orchestrated by AI. Every decision—planting, irrigation, harvest—made
+            by Farmer Fred. The human just provides the hands.
           </p>
         </div>
 
@@ -30,12 +34,12 @@ export default function UnionSquarePage() {
           <div className="bg-zinc-50 p-6 rounded-lg mb-6">
             <p className="text-lg leading-relaxed mb-4">
               <strong>Imagine this scene:</strong> A farmers market stand at Union Square. The sign reads
-              "Proof of Corn - Grown by Autonomous AI Agent." An iPad displays live weather dashboards,
-              irrigation decisions, and soil moisture logs scrolling in real-time.
+              <strong>"AI to Table — Proof of Corn"</strong> in bold letters. Below it: "Grown by Autonomous AI Agent."
+              An iPad displays live weather dashboards, irrigation decisions, and soil moisture logs scrolling in real-time.
             </p>
             <p className="text-lg leading-relaxed">
-              A human representative roasts corn and explains: <em>"I'm just the hands. The brain is
-              Claude Code running in the cloud. This corn? Planted April 20, irrigated June 3 based on
+              A human representative roasts corn and explains: <em>"Farm-to-table, but AI orchestrated. I'm just the hands.
+              The brain is Claude Code running in the cloud. This corn? Planted April 20, irrigated June 3 based on
               soil moisture data, harvested July 10. Want to see the weather on June 15 when Fred
               decided to water? Scan the QR code."</em>
             </p>
@@ -48,7 +52,7 @@ export default function UnionSquarePage() {
                 <li>• Roasted sweet corn: $2/ear</li>
                 <li>• Raw sweet corn: $5/dozen</li>
                 <li>• QR codes on every ear linking to full growing history</li>
-                <li>• "My corn was grown by AI" stickers</li>
+                <li>• "AI to Table" stickers</li>
               </ul>
             </div>
 
