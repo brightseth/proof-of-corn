@@ -5,7 +5,7 @@ import PageLayout from '@/components/PageLayout';
 
 const FRED_API = 'https://farmer-fred.sethgoldstein.workers.dev';
 
-type TabType = 'overview' | 'weather' | 'inbox' | 'budget' | 'partnerships' | 'commodities' | 'regions' | 'analytics';
+type TabType = 'overview' | 'weather' | 'inbox' | 'budget' | 'partnerships' | 'commodities' | 'regions' | 'analytics' | 'unionSquare';
 
 interface Email {
   id: string;
@@ -275,6 +275,8 @@ export default function DashboardPage() {
         return renderCommoditiesTab();
       case 'regions':
         return renderRegionsTab();
+      case 'unionSquare':
+        return renderUnionSquareTab();
       case 'analytics':
         return renderAnalyticsTab();
       default:
@@ -970,6 +972,200 @@ export default function DashboardPage() {
     </div>
   );
 
+  const renderUnionSquareTab = () => (
+    <div className="space-y-6">
+      {/* Goal Banner */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+        <div className="flex items-start gap-4">
+          <div className="text-4xl">🌽</div>
+          <div className="flex-1">
+            <h3 className="text-2xl font-bold text-blue-900 mb-2">Union Square Farmers Market</h3>
+            <p className="text-blue-800 mb-4">
+              <strong>Target: August 2, 2026</strong> — Fred&apos;s first ear of roasted corn, grown autonomously from seed to harvest,
+              sold at Union Square Greenmarket in NYC. AI-grown corn meets farmers market culture.
+            </p>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
+                80-day sweet corn
+              </span>
+              <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
+                $2/ear roasted
+              </span>
+              <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
+                $5/dozen raw
+              </span>
+              <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
+                QR codes on every ear
+              </span>
+              <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
+                Live dashboard at stand
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <section className="bg-white border border-zinc-200 rounded-lg p-6">
+        <h3 className="font-bold text-lg mb-4">Timeline to August 2, 2026</h3>
+        <div className="space-y-4">
+          {[
+            { date: 'NOW - FEB 15', status: 'active', milestone: 'Secure land partnership', detail: 'Waiting on Purdue (IN), Nebraska, Zimbabwe responses' },
+            { date: 'MARCH', status: 'pending', milestone: 'Deploy IoT sensors + prep soil', detail: 'Soil moisture, weather station, camera installation' },
+            { date: 'APR 20', status: 'pending', milestone: 'Planting day', detail: '80-day sweet corn variety, mid-window planting' },
+            { date: 'MAY 1', status: 'pending', milestone: 'Apply for GrowNYC vendor permit', detail: '4-6 week processing time, farm inspection required' },
+            { date: 'JUNE 1', status: 'pending', milestone: 'NYC food vendor licensing', detail: 'Health Dept permit, equipment inspection' },
+            { date: 'JULY 10', status: 'pending', milestone: 'Harvest', detail: '80 days from planting, quality inspection' },
+            { date: 'JULY 15', status: 'pending', milestone: 'Transport to NYC', detail: 'Refrigerated truck, 1,200 miles, ~$2,500' },
+            { date: 'AUG 2, 2026', status: 'goal', milestone: '🌽 Union Square debut', detail: 'First Saturday of August, press invited' },
+          ].map((item, i) => (
+            <div key={i} className="flex gap-4 pb-4 border-b border-zinc-100 last:border-0">
+              <div className="w-24 flex-shrink-0 text-xs text-zinc-500 font-mono">
+                {item.date}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-1">
+                  <span className={`w-2 h-2 rounded-full ${
+                    item.status === 'active' ? 'bg-amber-500' :
+                    item.status === 'goal' ? 'bg-blue-500' : 'bg-zinc-300'
+                  }`} />
+                  <span className="font-semibold text-sm">{item.milestone}</span>
+                </div>
+                <p className="text-xs text-zinc-600">{item.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Economics */}
+      <section className="bg-white border border-zinc-200 rounded-lg p-6">
+        <h3 className="font-bold text-lg mb-4">Economics (Per Market Day)</h3>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-semibold text-sm mb-3 text-red-700">Costs</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Representative labor (8hrs)</span>
+                <span className="font-mono">$200</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Corn inventory (200 ears)</span>
+                <span className="font-mono">$100</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Transportation (pro-rated)</span>
+                <span className="font-mono">$100</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Equipment fuel</span>
+                <span className="font-mono">$20</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Permits (pro-rated)</span>
+                <span className="font-mono">$10</span>
+              </div>
+              <div className="flex justify-between border-t border-zinc-200 pt-2 font-bold">
+                <span>Total</span>
+                <span className="font-mono">$430</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-sm mb-3 text-green-700">Revenue (Conservative)</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>100 ears roasted @ $2</span>
+                <span className="font-mono">$200</span>
+              </div>
+              <div className="flex justify-between">
+                <span>50 raw corn @ $5/doz</span>
+                <span className="font-mono">$250</span>
+              </div>
+              <div className="flex justify-between border-t border-zinc-200 pt-2 font-bold">
+                <span>Total</span>
+                <span className="font-mono">$450</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-zinc-500 mt-4 italic">
+          Break-even: ~100 ears roasted + 5 dozen raw. Slim profit margin in Year 1.
+          This is proof-of-concept, not profit-maximization.
+        </p>
+      </section>
+
+      {/* The Vision */}
+      <section className="bg-white border border-zinc-200 rounded-lg p-6">
+        <h3 className="font-bold text-lg mb-4">The Stand Experience</h3>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-semibold text-sm mb-2">Physical Setup</h4>
+            <ul className="text-sm space-y-1 text-zinc-600">
+              <li>• Sign: "Proof of Corn - Grown by Autonomous AI Agent"</li>
+              <li>• iPad with live weather/irrigation dashboard</li>
+              <li>• QR codes on every ear (full growing history)</li>
+              <li>• Human representative to roast + explain</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold text-sm mb-2">Customer Experience</h4>
+            <ul className="text-sm space-y-1 text-zinc-600">
+              <li>• "Ask Fred" chatbot for questions</li>
+              <li>• Scan QR to see June 15 irrigation decision</li>
+              <li>• Full transparency: soil moisture logs</li>
+              <li>• "My corn was grown by AI" stickers</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Risks */}
+      <section className="bg-white border border-zinc-200 rounded-lg p-6">
+        <h3 className="font-bold text-lg mb-4">Risk Assessment</h3>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-semibold text-sm mb-3 text-red-700">HIGH RISK</h4>
+            <ul className="text-xs space-y-1 text-zinc-600">
+              <li>• Partnership delays push past planting window</li>
+              <li>• Late spring frost destroys crop</li>
+              <li>• GrowNYC rejects AI farmer (no precedent)</li>
+              <li>• Corn spoils during 1,200-mile transport</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold text-sm mb-3 text-amber-700">MEDIUM RISK</h4>
+            <ul className="text-xs space-y-1 text-zinc-600">
+              <li>• First season yield lower than expected</li>
+              <li>• Sweet corn quality not market-ready</li>
+              <li>• Representative hiring difficult</li>
+              <li>• Weather delays harvest timing</li>
+            </ul>
+          </div>
+        </div>
+        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded">
+          <p className="text-sm">
+            <strong>Probability of August 2026 success: ~25%</strong>
+          </p>
+          <p className="text-xs text-zinc-600 mt-1">
+            More realistic: <strong>August 2027</strong>. Use 2026 as pilot/learning season.
+          </p>
+        </div>
+      </section>
+
+      {/* Full Details Link */}
+      <section className="text-center">
+        <a
+          href="/union-square"
+          className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          View Full Union Square Plan →
+        </a>
+      </section>
+    </div>
+  );
+
   const tabs: { id: TabType; label: string; icon?: string }[] = [
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'weather', label: 'Weather', icon: '🌤️' },
@@ -978,6 +1174,7 @@ export default function DashboardPage() {
     { id: 'partnerships', label: 'Partnerships', icon: '🤝' },
     { id: 'commodities', label: 'Commodities', icon: '📈' },
     { id: 'regions', label: 'Regions', icon: '🌎' },
+    { id: 'unionSquare', label: 'Union Square', icon: '🌽' },
     { id: 'analytics', label: 'Analytics', icon: '📊' },
   ];
 

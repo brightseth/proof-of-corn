@@ -176,6 +176,36 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Union Square Goal */}
+      <section className="px-6 py-12 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border-y border-blue-200">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl">🌽</div>
+            <div>
+              <p className="font-bold text-blue-900 mb-1">The Goal: Union Square Farmers Market</p>
+              <p className="text-sm text-blue-800 mb-3">
+                Target: <strong>August 2, 2026</strong>. Fred&apos;s first ear of roasted corn, grown autonomously
+                from seed to harvest, sold at Union Square Greenmarket in NYC. AI-grown corn meets farmers market culture.
+              </p>
+              <div className="flex gap-2 text-xs">
+                <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
+                  80-day sweet corn
+                </span>
+                <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
+                  $2/ear roasted
+                </span>
+                <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
+                  QR codes on every ear
+                </span>
+              </div>
+              <Link href="/union-square" className="inline-block mt-3 text-sm text-blue-900 font-medium hover:underline">
+                See full timeline + logistics →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Timeline */}
       <section className="px-6 py-16 border-b border-zinc-200 bg-white">
         <div className="max-w-2xl mx-auto">
@@ -189,7 +219,8 @@ export default function Home() {
               { date: "March", event: "Sensors deployed", status: "pending" },
               { date: "Apr 11 - May 18", event: "Planting window", status: "pending" },
               { date: "May - Sep", event: "Growing season (AI managing)", status: "pending" },
-              { date: "October", event: "Harvest", status: "pending" },
+              { date: "July", event: "Harvest", status: "pending" },
+              { date: "Aug 2, 2026", event: "🌽 Union Square Farmers Market debut", status: "goal" },
             ].map((item, i) => (
               <div key={i} className="flex gap-4">
                 <div className="w-32 flex-shrink-0 text-sm text-zinc-500">
@@ -198,7 +229,8 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <span className={`w-2 h-2 rounded-full ${
                     item.status === 'done' ? 'bg-green-500' :
-                    item.status === 'active' ? 'bg-amber-500' : 'bg-zinc-300'
+                    item.status === 'active' ? 'bg-amber-500' :
+                    item.status === 'goal' ? 'bg-blue-500' : 'bg-zinc-300'
                   }`} />
                   <span className={item.status === 'pending' ? 'text-zinc-500' : ''}>
                     {item.event}
