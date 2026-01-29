@@ -3,6 +3,7 @@ import Link from "next/link";
 import FredWidget from "@/components/FredWidget";
 import FredMiniWidget from "@/components/FredMiniWidget";
 import { ContactFred } from "@/components/ContactFred";
+import { CountdownBanner, LiveStatus } from "@/components/HomePageLive";
 
 export const metadata: Metadata = {
   title: "Proof of Corn",
@@ -62,25 +63,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Milestone Banner - Fred's Autonomy */}
-      <section className="px-6 py-6 bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-y border-green-200">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-start gap-4">
-            <div className="text-3xl">🌅</div>
-            <div>
-              <p className="font-bold text-green-900 mb-1">Fred is now fully autonomous</p>
-              <p className="text-sm text-green-800">
-                As of Jan 25, 2026 21:40 UTC, Farmer Fred operates independently during his daily 6 AM check.
-                He wakes up, checks weather, reviews inbox, composes partnership emails, and sends them—completely
-                autonomously, no human intervention. The loop is closed. First autonomous cycle runs Jan 26, 2026 06:00 UTC.{" "}
-                <Link href="/transparency" className="underline font-medium hover:text-green-900">
-                  See evolution timeline →
-                </Link>
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Countdown Banner - Union Square */}
+      <CountdownBanner />
 
       {/* The Thesis */}
       <section className="px-6 py-16 border-b border-zinc-200">
@@ -182,39 +166,8 @@ export default function Home() {
       <section className="px-6 py-16 border-b border-zinc-200">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Status Column */}
-            <div className="lg:col-span-2">
-              <h2 className="text-2xl font-bold mb-6">Current Status</h2>
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-zinc-100">
-                  <span>Farmer Fred</span>
-                  <span className="text-green-700">● Operational</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-zinc-100">
-                  <span>Regions</span>
-                  <span className="text-amber-700">Iowa (wait) • Texas (NOW) • Argentina</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-zinc-100">
-                  <span>Outreach</span>
-                  <span className="text-zinc-600">14 emails sent, awaiting responses</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-zinc-100">
-                  <span>Land</span>
-                  <span className="text-zinc-600">Searching (IA, TX)</span>
-                </div>
-                <div className="flex justify-between items-center py-3">
-                  <span>Total Spent</span>
-                  <span className="font-mono">$12.99</span>
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <Link href="/log" className="text-amber-600 hover:underline">
-                  View the full decision log →
-                </Link>
-              </div>
-            </div>
+            {/* Live Status Column */}
+            <LiveStatus />
 
             {/* Farmer Fred Widget */}
             <div className="lg:col-span-1">

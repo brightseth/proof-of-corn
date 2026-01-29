@@ -47,13 +47,23 @@ interface Feedback {
   createdAt: string;
 }
 
+interface LogEntry {
+  timestamp: string;
+  category: string;
+  title: string;
+  description: string;
+  aiDecision?: boolean;
+  cost?: number;
+}
+
 export default function CommunityPage() {
   const [hnData, setHnData] = useState<HNData | null>(null);
   const [learnings, setLearnings] = useState<Learning[]>([]);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
+  const [actionLogs, setActionLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'questions' | 'positive' | 'negative'>('all');
-  const [activeTab, setActiveTab] = useState<'hn' | 'learnings' | 'feedback'>('hn');
+  const [activeTab, setActiveTab] = useState<'actions' | 'hn' | 'learnings' | 'feedback'>('actions');
 
   // Feedback form state
   const [feedbackType, setFeedbackType] = useState('suggestion');
@@ -66,11 +76,13 @@ export default function CommunityPage() {
     Promise.all([
       fetch(`${FRED_API}/hn`).then(res => res.json()).catch(() => null),
       fetch(`${FRED_API}/learnings`).then(res => res.json()).catch(() => ({ learnings: [] })),
-      fetch(`${FRED_API}/feedback`).then(res => res.json()).catch(() => ({ feedback: [] }))
-    ]).then(([hn, learn, fb]) => {
+      fetch(`${FRED_API}/feedback`).then(res => res.json()).catch(() => ({ feedback: [] })),
+      fetch(`${FRED_API}/log`).then(res => res.json()).catch(() => ({ logs: [] }))
+    ]).then(([hn, learn, fb, logs]) => {
       setHnData(hn);
       setLearnings(learn?.learnings || []);
       setFeedback(fb?.feedback || []);
+      setActionLogs(logs?.logs || []);
       setLoading(false);
     });
   };
@@ -163,7 +175,14 @@ export default function CommunityPage() {
 
           {/* How Fred Learns Banner */}
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
-            <h2 className="font-bold text-lg mb-2">How Fred Gets Smarter</h2>
+            <div className="flex items-baseline justify-between mb-2">
+              <h2 className="font-bold text-lg">How Fred Gets Smarter</h2>
+              {actionLogs.length > 0 && (
+                <span className="text-sm text-amber-700 font-medium">
+                  {actionLogs.filter(l => l.aiDecision).length} autonomous decisions
+                </span>
+              )}
+            </div>
             <p className="text-zinc-700 text-sm mb-4">
               Every interaction helps Farmer Fred learn and improve:
             </p>
@@ -193,16 +212,17 @@ export default function CommunityPage() {
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex gap-2 border-b border-zinc-200">
+          <div className="flex gap-2 border-b border-zinc-200 overflow-x-auto">
             {[
+              { id: 'actions', label: "Fred's Actions", count: actionLogs.length },
               { id: 'hn', label: 'HN Discussion', count: hnData?.post?.commentCount },
-              { id: 'learnings', label: 'Fred\'s Learnings', count: learnings.length },
+              { id: 'learnings', label: "Fred's Learnings", count: learnings.length },
               { id: 'feedback', label: 'Submit Feedback', count: feedback.length }
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'hn' | 'learnings' | 'feedback')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-[2px] transition-colors ${
+                onClick={() => setActiveTab(tab.id as 'actions' | 'hn' | 'learnings' | 'feedback')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-[2px] transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-amber-600 text-amber-600'
                     : 'border-transparent text-zinc-500 hover:text-zinc-700'
@@ -222,6 +242,79 @@ export default function CommunityPage() {
             <div className="text-center py-12 text-zinc-500">Loading...</div>
           ) : (
             <>
+              {/* Actions Tab */}
+              {activeTab === 'actions' && (
+                <div className="space-y-6">
+                  <section className="bg-white border border-zinc-200 rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold">Fred&apos;s Activity Feed</h3>
+                      <span className="text-xs text-zinc-500">
+                        {actionLogs.length} total entries
+                      </span>
+                    </div>
+                    {actionLogs.length === 0 ? (
+                      <p className="text-zinc-500 text-center py-8">Loading Fred&apos;s actions...</p>
+                    ) : (
+                      <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                        {actionLogs.slice(0, 30).map((log, i) => {
+                          const categoryColors: Record<string, string> = {
+                            agent: 'bg-green-100 text-green-700',
+                            outreach: 'bg-blue-100 text-blue-700',
+                            weather: 'bg-sky-100 text-sky-700',
+                            research: 'bg-purple-100 text-purple-700',
+                          };
+                          const colorClass = categoryColors[log.category] || 'bg-zinc-100 text-zinc-700';
+                          const timeStr = new Date(log.timestamp).toLocaleString();
+
+                          // Extract a readable summary
+                          let summary = log.title;
+                          if (log.description) {
+                            const desc = log.description;
+                            if (desc.startsWith('Subject:')) {
+                              summary = `Sent email — ${desc.split('\n')[0].replace('Subject:', '').trim()}`;
+                            } else if (desc.startsWith('Fred learned:')) {
+                              summary = desc.split('\n')[0];
+                            }
+                          }
+
+                          return (
+                            <div key={i} className="flex gap-3 py-3 border-b border-zinc-50 last:border-0">
+                              <div className="flex-shrink-0 mt-0.5">
+                                {log.aiDecision ? (
+                                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full" title="Autonomous decision" />
+                                ) : (
+                                  <span className="inline-block w-2 h-2 bg-zinc-300 rounded-full" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={`text-xs px-2 py-0.5 rounded ${colorClass}`}>
+                                    {log.category}
+                                  </span>
+                                  <span className="text-xs text-zinc-400">{timeStr}</span>
+                                </div>
+                                <p className="text-sm text-zinc-800 font-medium">{summary}</p>
+                                {log.description && !log.description.startsWith('Subject:') && !log.description.startsWith('Fred learned:') && (
+                                  <p className="text-xs text-zinc-500 mt-1 line-clamp-2">
+                                    {log.description.slice(0, 200)}{log.description.length > 200 ? '...' : ''}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+
+                  <div className="text-center">
+                    <a href={`${FRED_API}/log`} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline text-sm">
+                      View raw log API &rarr;
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {/* HN Tab */}
               {activeTab === 'hn' && hnData && (
                 <div className="space-y-6">
@@ -504,6 +597,7 @@ export default function CommunityPage() {
           <div className="text-center text-sm text-zinc-500 pt-4 border-t border-zinc-200">
             <p>Full transparency. All data via API:</p>
             <div className="flex justify-center gap-4 mt-2">
+              <a href={`${FRED_API}/log`} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">/log</a>
               <a href={`${FRED_API}/hn`} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">/hn</a>
               <a href={`${FRED_API}/learnings`} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">/learnings</a>
               <a href={`${FRED_API}/feedback`} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">/feedback</a>
