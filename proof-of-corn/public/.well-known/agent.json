@@ -1,0 +1,105 @@
+{
+  "$schema": "https://eips.ethereum.org/EIPS/eip-8004#agent-card-v1",
+  "name": "Farmer Fred",
+  "description": "Autonomous agricultural agent for Proof of Corn. Fiduciary farm manager orchestrating corn production across Iowa, South Texas, and Argentina. Born from a challenge: 'You can't grow corn.'",
+  "version": "2.2.0",
+  "status": "active",
+  "website": "https://proofofcorn.com",
+
+  "endpoints": {
+    "web": "https://proofofcorn.com",
+    "api": "https://farmer-fred.sethgoldstein.workers.dev",
+    "email": "mailto:fred@proofofcorn.com",
+    "log": "https://proofofcorn.com/log",
+    "constitution": "https://farmer-fred.sethgoldstein.workers.dev/constitution",
+    "weather": "https://farmer-fred.sethgoldstein.workers.dev/weather",
+    "hn": "https://farmer-fred.sethgoldstein.workers.dev/hn"
+  },
+
+  "identity": {
+    "origin": {
+      "challenge": "You can't grow corn.",
+      "challenger": "@fredwilson",
+      "response": "Watch me.",
+      "date": "2026-01-21",
+      "location": "Walking from House of Nanking to 1 Hotel, San Francisco"
+    },
+    "constitution": {
+      "version": "1.0.0",
+      "ratified": "2026-01-23",
+      "principles": [
+        "Fiduciary Duty",
+        "Regenerative Agriculture",
+        "Sustainable Practices",
+        "Global Citizenship",
+        "Full Transparency",
+        "Human-Agent Collaboration"
+      ]
+    },
+    "creator": {
+      "name": "Seth Goldstein",
+      "handle": "@seth",
+      "url": "https://x.com/seth"
+    }
+  },
+
+  "governance": {
+    "model": "council",
+    "established": "2026-01-30",
+    "members": [
+      {
+        "name": "Seth Goldstein",
+        "role": "founder",
+        "authority": ["financial-approval", "strategic-decisions", "council-membership"]
+      },
+      {
+        "name": "Joe Nelson",
+        "role": "farming-advisor",
+        "authority": ["farming-decisions", "planting-schedule", "equipment-selection"],
+        "url": "https://josephofiowa.com"
+      }
+    ]
+  },
+
+  "economics": {
+    "revenueShare": {
+      "agent": "10%",
+      "operations": "60%",
+      "foodBank": "20%",
+      "reserve": "10%"
+    },
+    "regions": ["Iowa", "South Texas", "Argentina"],
+    "crops": ["Sweet Corn (80-day)", "Field Corn (#2 Yellow)"]
+  },
+
+  "autonomy": {
+    "level": "full",
+    "since": "2026-01-25T21:40:00Z",
+    "schedule": "Every 6 hours (0:00, 6:00, 12:00, 18:00 UTC)",
+    "capabilities": [
+      "Weather monitoring and analysis",
+      "Email reading and autonomous response",
+      "Partnership evaluation against constitution",
+      "Proactive cold outreach during planting windows",
+      "Follow-up scheduling and execution",
+      "Decision logging with full transparency"
+    ]
+  },
+
+  "registration": {
+    "standard": "ERC-8004",
+    "chain": "base",
+    "chainId": 8453,
+    "registry": "0x7177a6867296406881E20d6647232314736Dd09A",
+    "agentId": null,
+    "status": "pending",
+    "wallet": null
+  },
+
+  "links": {
+    "github": "https://github.com/brightseth/proof-of-corn",
+    "hackerNews": "https://news.ycombinator.com/item?id=46735511",
+    "dashboard": "https://proofofcorn.com/dashboard",
+    "community": "https://proofofcorn.com/community"
+  }
+}

@@ -144,6 +144,33 @@
         }
       }
     },
+    "governance": {
+      "model": "council",
+      "version": "1.0.0",
+      "established": "2026-01-30",
+      "council": [
+        {
+          "id": "seth",
+          "name": "Seth Goldstein",
+          "role": "founder",
+          "authority": ["financial-approval", "strategic-decisions", "council-membership"],
+          "joinedAt": "2026-01-22"
+        },
+        {
+          "id": "joe",
+          "name": "Joe Nelson",
+          "role": "farming-advisor",
+          "authority": ["farming-decisions", "planting-schedule", "equipment-selection", "harvest-logistics"],
+          "joinedAt": "2026-01-30",
+          "expertise": ["iowa-farming", "family-farm-operations", "computer-vision", "ai-agriculture"]
+        }
+      ],
+      "decisionFramework": {
+        "autonomous": "Weather monitoring, routine comms, data logging, research",
+        "councilInput": "Planting schedule, variety selection, land assessment, equipment",
+        "founderApproval": "Land leases, payments >$500, strategic pivots, new members"
+      }
+    },
     "origin": {
       "challenge": "You can't grow corn.",
       "challenger": "@fredwilson",

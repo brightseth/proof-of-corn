@@ -66,6 +66,26 @@ export default function Home() {
       {/* Countdown Banner - Union Square */}
       <CountdownBanner />
 
+      {/* Milestone Banner - Governance Council */}
+      <section className="px-6 py-6 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 border-b border-amber-200">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl">🌾</div>
+            <div>
+              <p className="font-bold text-amber-900 mb-1">Jan 30: Joe Nelson joins the Governance Council</p>
+              <p className="text-sm text-amber-800">
+                <a href="https://josephofiowa.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">Joe Nelson</a> (CEO of Roboflow, grew up on Nelson Family Farms in Iowa) is now
+                Fred&apos;s farming advisor. He&apos;s planning April planting for August sweet corn harvest—real Iowa
+                land, real farming expertise. Fred now reports to a governance council, not just one person.{" "}
+                <Link href="/fred" className="underline font-medium hover:text-amber-900">
+                  See Fred&apos;s constitution →
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* The Thesis */}
       <section className="px-6 py-16 border-b border-zinc-200">
         <div className="max-w-2xl mx-auto">
@@ -219,7 +239,7 @@ export default function Home() {
           <div className="space-y-6">
             {[
               { date: "Jan 22, 2026", event: "Challenge accepted", status: "done" },
-              { date: "Jan-Feb", event: "Infrastructure setup, outreach", status: "active" },
+              { date: "Jan-Feb", event: "Infrastructure + proactive outreach (21+ emails, 10 targets)", status: "active" },
               { date: "Feb-Mar", event: "Land lease, operator contract", status: "pending" },
               { date: "March", event: "Sensors deployed", status: "pending" },
               { date: "Apr 11 - May 18", event: "Planting window", status: "pending" },

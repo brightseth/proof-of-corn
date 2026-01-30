@@ -150,17 +150,17 @@ export default function FredPage() {
       <main className="px-6 py-8">
         <div className="max-w-4xl mx-auto">
 
-          {/* Evolution Milestone */}
-          <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+          {/* Governance Milestone */}
+          <div className="mb-6 bg-gradient-to-r from-amber-50 to-yellow-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
             <div className="flex items-start gap-3">
-              <div className="text-2xl">🌅</div>
+              <div className="text-2xl">🌾</div>
               <div>
-                <p className="font-bold text-green-900 text-sm">NEW: Fred is now FULLY autonomous</p>
-                <p className="text-sm text-green-800">
-                  As of Jan 25, 2026 21:40 UTC, Fred operates completely independently. Every day at 6 AM UTC,
-                  he wakes up, checks weather across 3 regions, reviews his inbox, composes partnership emails,
-                  and sends them—no human prompting required. True autonomous operation.{" "}
-                  <a href="/transparency" className="underline font-medium">View full evolution →</a>
+                <p className="font-bold text-amber-900 text-sm">Jan 30: Governance Council established</p>
+                <p className="text-sm text-amber-800">
+                  Fred now reports to a governance council: Seth Goldstein (founder) and{" "}
+                  <a href="https://josephofiowa.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">Joe Nelson</a>{" "}
+                  (farming advisor, CEO of Roboflow, Nelson Family Farms Iowa). Joe is planning April planting
+                  for August sweet corn harvest. All emails CC&apos;d to both members.
                 </p>
               </div>
             </div>
@@ -431,6 +431,44 @@ export default function FredPage() {
             <p className="text-xs text-zinc-500 mt-2">
               Live data from Fred&apos;s decision log. <a href="/log" className="text-amber-600 hover:underline">View full log →</a>
             </p>
+          </div>
+
+          {/* Governance Council */}
+          <div className="mt-8 p-6 bg-white border border-zinc-200 rounded-lg">
+            <h2 className="text-xl font-bold mb-4">Governance Council</h2>
+            <p className="text-sm text-zinc-600 mb-4">
+              Fred reports to a governance council. All outbound emails CC&apos;d to every member.
+              Farming decisions require council input. Financial decisions require founder approval.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-zinc-50 rounded-lg border border-zinc-200">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-lg font-bold text-amber-700">S</div>
+                  <div>
+                    <p className="font-bold">Seth Goldstein</p>
+                    <p className="text-xs text-amber-600">Founder</p>
+                  </div>
+                </div>
+                <p className="text-xs text-zinc-500">
+                  Project founder. Final approval on land leases, payments &gt;$500, strategic pivots. Initiated the challenge response.
+                </p>
+              </div>
+              <div className="p-4 bg-zinc-50 rounded-lg border border-amber-300 ring-1 ring-amber-100">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-lg font-bold text-green-700">J</div>
+                  <div>
+                    <p className="font-bold">Joe Nelson <span className="text-xs font-normal text-green-600 ml-1">NEW</span></p>
+                    <p className="text-xs text-amber-600">Farming Advisor</p>
+                  </div>
+                </div>
+                <p className="text-xs text-zinc-500">
+                  CEO of{" "}
+                  <a href="https://roboflow.com" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">Roboflow</a>.
+                  Grew up on Nelson Family Farms, Iowa. Leading April planting for August sweet corn harvest.
+                  Joined Jan 30, 2026.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Constitution */}

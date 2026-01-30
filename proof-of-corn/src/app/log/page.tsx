@@ -135,9 +135,9 @@ export default function LogPage() {
               <p className="font-bold text-green-900 text-sm">Jan 25, 2026 21:40 UTC - Fred is now FULLY autonomous</p>
             </div>
             <p className="text-sm text-green-800">
-              Fred now operates independently during his daily 6 AM UTC check. He wakes up, checks weather,
-              reviews inbox, composes partnership emails, and sends them—completely autonomously.
-              First autonomous cycle: Jan 26, 2026 06:00 UTC. Watch this log for his decisions in real-time.
+              Fred operates independently every 6 hours. He checks weather, reviews inbox, composes partnership emails,
+              and sends them—completely autonomously. As of Jan 28, Fred also proactively cold-emails farming contacts
+              during planting windows (7 South Texas organizations contacted). Watch this log for his decisions in real-time.
             </p>
           </div>
 

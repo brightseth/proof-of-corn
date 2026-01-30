@@ -174,6 +174,41 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    date: 'January 30, 2026',
+    version: 'v2.2',
+    title: 'Governance Council & Joe Nelson Onboarding',
+    summary: 'Fred now reports to a governance council, not just one person. Joe Nelson (CEO of Roboflow, Nelson Family Farms Iowa) joins as farming advisor. All emails CC both members.',
+    changes: [
+      'Governance council established — Fred reports to Seth (founder) + Joe Nelson (farming advisor)',
+      'All outbound emails now CC both governance council members via dynamic GOVERNANCE_CC',
+      'Alerts (weather, leads, budget) sent to all council members, not just Seth',
+      'Joe Nelson\'s email addresses added to known governance addresses for sender recognition',
+      'Constitution updated with governance section: council input on farming decisions, founder approval on financial/strategic',
+      'ERC-8004 registration updated with governance metadata (roles, authority, decision framework)',
+      '.well-known/agent.json endpoint created for Spirit Protocol / agent discovery',
+      'Website updated: governance council cards on /fred, milestone banner on homepage, status section reflects Iowa partnership',
+      'Onboarding email sent to Joe with 9 farming questions to inform Fred\'s April planting decisions',
+    ],
+    impact: 'Fred is no longer a single-human-supervised agent. He operates under a governance council with domain expertise. Joe brings real Iowa farming knowledge to every decision.',
+  },
+  {
+    date: 'January 28, 2026',
+    version: 'v2.1',
+    title: 'Proactive Outreach & South Texas Pipeline',
+    summary: 'Fred gained proactive cold outreach capability and contacted 7 South Texas farming organizations autonomously. Critical bug fix unblocked all email sends.',
+    changes: [
+      'Proactive outreach system — during South Texas planting window (Jan 20 - Feb 28), Fred autonomously identifies targets, composes cold emails via Claude, and sends up to 2 per cycle',
+      'South Texas pipeline — 7/7 targets contacted: Texas A&M AgriLife Extension, USDA FSA Texas, Hidalgo/Cameron/Willacy/Nueces County Extensions, Texas Farm Bureau RGV',
+      'Follow-up timing reduced — leads: 5d → 2d, others: 7d → 4d for faster response cycles',
+      'Fixed JSON parse crash — Claude wrapping responses in markdown code blocks was blocking all email sends since Jan 25; new stripCodeBlocks utility resolves this',
+      'CC Seth on all outbound — every autonomous email now CCs sethgoldstein@gmail.com for oversight',
+      'Follow-up task execution — Fred can now autonomously execute follow_up tasks (previously only respond_email)',
+      'New /outreach-targets endpoint — dashboard visibility into the full outreach pipeline with status tracking',
+      '~450 lines of dead code removed',
+    ],
+    impact: 'Fred is no longer waiting for inbound leads — he proactively identifies and contacts farming partners. South Texas planting window closes Feb 28.',
+  },
+  {
     date: 'January 27, 2026',
     version: 'v2',
     title: 'Autonomy Upgrade',
@@ -1103,7 +1138,7 @@ export default function DashboardPage() {
         <h3 className="font-bold text-lg mb-4">Timeline to August 2, 2026</h3>
         <div className="space-y-4">
           {[
-            { date: 'NOW - FEB 15', status: 'active', milestone: 'Secure land partnership', detail: 'Waiting on Purdue (IN), Nebraska, Zimbabwe responses' },
+            { date: 'NOW - FEB 15', status: 'active', milestone: 'Secure land partnership', detail: '3 partnership leads (Purdue, Nebraska, Zimbabwe) + 7 South Texas orgs contacted. Follow-ups every 2 days.' },
             { date: 'MARCH', status: 'pending', milestone: 'Deploy IoT sensors + prep soil', detail: 'Soil moisture, weather station, camera installation' },
             { date: 'APR 20', status: 'pending', milestone: 'Planting day', detail: '80-day sweet corn variety, mid-window planting' },
             { date: 'MAY 1', status: 'pending', milestone: 'Apply for GrowNYC vendor permit', detail: '4-6 week processing time, farm inspection required' },

@@ -54,6 +54,19 @@ export interface Env {
 // Seth's known email addresses (for forward detection)
 const SETH_ADDRESSES = ["sethgoldstein@gmail.com", "seth@slashvibe.dev"];
 
+// Joe Nelson's known email addresses (governance council member)
+const JOE_ADDRESSES = ["joseph.nelson@roboflow.com", "joseph.nelson2012@gmail.com"];
+
+// All governance member addresses (for sender recognition)
+const GOVERNANCE_ADDRESSES = [...SETH_ADDRESSES, ...JOE_ADDRESSES];
+
+// Governance council — all members CC'd on outbound emails
+const GOVERNANCE_COUNCIL = [
+  { name: "Seth Goldstein", email: "sethgoldstein@gmail.com", role: "founder" },
+  { name: "Joe Nelson", email: "joseph.nelson@roboflow.com", role: "farming-advisor" },
+];
+const GOVERNANCE_CC = GOVERNANCE_COUNCIL.map(m => m.email).join(", ");
+
 // ============================================
 // MAIN WORKER
 // ============================================
@@ -938,7 +951,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
         to: contact,
         subject: parsed.subject,
         text: parsed.body,
-        cc: "sethgoldstein@gmail.com"
+        cc: GOVERNANCE_CC
       };
 
       const sendResponse = await fetch("https://api.resend.com/emails", {
@@ -967,7 +980,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
       // Log outreach
       const outreachLog = createLogEntry(
         "outreach",
-        `Follow-up email sent to ${contact} (CC: sethgoldstein@gmail.com)`,
+        `Follow-up email sent to ${contact} (CC: governance council)`,
         `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...`
       );
       await env.FARMER_FRED_KV.put(
@@ -981,7 +994,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
         task: task.id,
         email: {
           to: contact,
-          cc: "sethgoldstein@gmail.com",
+          cc: GOVERNANCE_CC,
           subject: parsed.subject,
           body: parsed.body,
           messageId: sendResult.id
@@ -1071,7 +1084,7 @@ Do not include any other text or formatting.`;
     };
 
     // Always CC Seth; use forwarding address if available
-    emailPayload.cc = ccRecipient || "sethgoldstein@gmail.com";
+    emailPayload.cc = ccRecipient || GOVERNANCE_CC;
 
     const sendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -1741,7 +1754,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                   subject: parsed.subject,
                   text: parsed.body
                 };
-                emailPayload.cc = ccRecipient || "sethgoldstein@gmail.com";
+                emailPayload.cc = ccRecipient || GOVERNANCE_CC;
 
                 const sendResponse = await fetch("https://api.resend.com/emails", {
                   method: "POST",
@@ -1823,7 +1836,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                   to: contact,
                   subject: parsed.subject,
                   text: parsed.body,
-                  cc: "sethgoldstein@gmail.com"
+                  cc: GOVERNANCE_CC
                 };
 
                 const sendResponse = await fetch("https://api.resend.com/emails", {
@@ -1844,7 +1857,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 
                   const outreachLog = createLogEntry(
                     "outreach",
-                    `Autonomous follow-up sent to ${contact} (CC: sethgoldstein@gmail.com)`,
+                    `Autonomous follow-up sent to ${contact} (CC: governance council)`,
                     `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Follow-up sent during daily check]`
                   );
                   await env.FARMER_FRED_KV.put(
@@ -1991,7 +2004,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                   to: target.email,
                   subject: parsed.subject,
                   text: parsed.body,
-                  cc: "sethgoldstein@gmail.com"
+                  cc: GOVERNANCE_CC
                 };
 
                 const sendResponse = await fetch("https://api.resend.com/emails", {
