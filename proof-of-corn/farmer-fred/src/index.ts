@@ -65,7 +65,7 @@ const GOVERNANCE_COUNCIL = [
   { name: "Seth Goldstein", email: "sethgoldstein@gmail.com", role: "founder" },
   { name: "Joe Nelson", email: "joseph.nelson@roboflow.com", role: "farming-advisor" },
 ];
-const GOVERNANCE_CC = GOVERNANCE_COUNCIL.map(m => m.email).join(", ");
+const GOVERNANCE_CC = GOVERNANCE_COUNCIL.map(m => m.email);
 
 // ============================================
 // MAIN WORKER
@@ -128,6 +128,12 @@ export default {
             return json({ error: "POST required" }, corsHeaders, 405);
           }
           return await handleDailyCheck(env, ctx, corsHeaders);
+
+        case "/execute":
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          return await handleExecuteTasks(env, corsHeaders);
 
         case "/decide":
           if (request.method !== "POST") {
@@ -379,6 +385,218 @@ async function handleDailyCheck(
   );
 
   return json(result, headers);
+}
+
+// Execute pending tasks directly (no Claude planning call, just process tasks from KV)
+async function handleExecuteTasks(
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const context = await buildAgentContext(env);
+  const executedActions: string[] = [];
+
+  if (!env.RESEND_API_KEY) {
+    return json({ error: "RESEND_API_KEY not configured" }, headers, 500);
+  }
+
+  // Get actionable tasks (follow_up and respond_email only, skip research)
+  // We need to look up task types from KV since context only has description
+  const allPending = context.pendingTasks
+    .filter(t => t.status === "pending" && (t.priority === "high" || t.priority === "medium"));
+
+  // Filter to only email-actionable tasks by checking KV for type
+  const actionableTasks: typeof allPending = [];
+  for (const t of allPending) {
+    if (actionableTasks.length >= 3) break;
+    const fullTask = await env.FARMER_FRED_KV.get(`task:${t.id}`, "json") as Task | null;
+    if (fullTask && (fullTask.type === "follow_up" || fullTask.type === "respond_email")) {
+      actionableTasks.push(t);
+    }
+  }
+
+  console.log(`[EXECUTE] Processing ${actionableTasks.length} tasks`);
+
+  for (const agentTask of actionableTasks) {
+    try {
+      const task = await env.FARMER_FRED_KV.get(`task:${agentTask.id}`, "json") as Task | null;
+      if (!task) continue;
+
+      console.log(`[EXECUTE] Task: type=${task.type}, title=${task.title?.slice(0, 60)}`);
+
+      if (task.type === "respond_email" && task.relatedEmailId) {
+        const email = await env.FARMER_FRED_KV.get(`email:${task.relatedEmailId}`, "json") as Email | null;
+        if (email) {
+          let actualSender = email.from;
+          let ccRecipient: string | undefined;
+          const forwardMatch = email.body?.match(/From:\s*(?:.*?<)?([^\s<>]+@[^\s<>]+)(?:>)?/i);
+          if (forwardMatch && SETH_ADDRESSES.includes(email.from.toLowerCase())) {
+            actualSender = forwardMatch[1];
+            ccRecipient = email.from;
+          }
+
+          const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
+
+You received this email${ccRecipient ? " (forwarded by Seth)" : ""}:
+From: ${actualSender}
+Subject: ${email.subject}
+Message: ${email.body}
+
+Your task: ${task.description}
+
+Compose a professional, enthusiastic email response. Be specific about next steps. Keep it under 200 words.
+
+IMPORTANT: Respond ONLY with valid JSON in this exact format:
+{"subject": "Re: ...", "body": "..."}`;
+
+          const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": env.ANTHROPIC_API_KEY,
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 1024,
+              messages: [{ role: "user", content: emailPrompt }]
+            })
+          });
+
+          if (claudeResponse.ok) {
+            const data: any = await claudeResponse.json();
+            const emailContent = data.content?.[0]?.text;
+            if (emailContent) {
+              const parsed = JSON.parse(stripCodeBlocks(emailContent));
+              const emailPayload: any = {
+                from: "Farmer Fred <fred@proofofcorn.com>",
+                to: actualSender,
+                subject: parsed.subject,
+                text: parsed.body
+              };
+              emailPayload.cc = ccRecipient || GOVERNANCE_CC;
+
+              const sendResponse = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify(emailPayload)
+              });
+
+              if (sendResponse.ok) {
+                task.status = "completed";
+                await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
+                email.status = "replied";
+                await env.FARMER_FRED_KV.put(`email:${email.id}`, JSON.stringify(email));
+
+                const outreachLog = createLogEntry(
+                  "outreach",
+                  `Email sent to ${actualSender} (CC: governance council)`,
+                  `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Executed via /execute endpoint]`
+                );
+                await env.FARMER_FRED_KV.put(
+                  `log:${Date.now()}-exec-email`,
+                  JSON.stringify(outreachLog),
+                  { expirationTtl: 60 * 60 * 24 * 90 }
+                );
+                await scheduleFollowUp(env, actualSender, email.category, parsed.subject);
+                executedActions.push(`SENT: Email to ${actualSender} — ${parsed.subject}`);
+              } else {
+                const err = await sendResponse.text();
+                executedActions.push(`FAILED: Email to ${actualSender} — Resend error: ${err.slice(0, 100)}`);
+              }
+            }
+          }
+        }
+      } else if (task.type === "follow_up") {
+        const contactMatch = task.title.match(/Follow up with\s+(\S+@\S+)/i);
+        if (contactMatch) {
+          const contact = contactMatch[1];
+
+          const followUpPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
+
+You previously contacted ${contact} but haven't heard back.
+Context: ${task.description}
+
+Compose a short, friendly follow-up email. Keep it under 100 words. Be warm but professional.
+
+IMPORTANT: Respond ONLY with valid JSON in this exact format:
+{"subject": "Following up - Proof of Corn", "body": "..."}`;
+
+          const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": env.ANTHROPIC_API_KEY,
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 512,
+              messages: [{ role: "user", content: followUpPrompt }]
+            })
+          });
+
+          if (claudeResponse.ok) {
+            const data: any = await claudeResponse.json();
+            const emailContent = data.content?.[0]?.text;
+            if (emailContent) {
+              const parsed = JSON.parse(stripCodeBlocks(emailContent));
+              const sendResponse = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  from: "Farmer Fred <fred@proofofcorn.com>",
+                  to: contact,
+                  subject: parsed.subject,
+                  text: parsed.body,
+                  cc: GOVERNANCE_CC
+                })
+              });
+
+              if (sendResponse.ok) {
+                task.status = "completed";
+                await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
+                await scheduleFollowUp(env, contact, "lead", parsed.subject);
+
+                const outreachLog = createLogEntry(
+                  "outreach",
+                  `Follow-up sent to ${contact} (CC: governance council)`,
+                  `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Follow-up via /execute endpoint]`
+                );
+                await env.FARMER_FRED_KV.put(
+                  `log:${Date.now()}-exec-followup`,
+                  JSON.stringify(outreachLog),
+                  { expirationTtl: 60 * 60 * 24 * 90 }
+                );
+                executedActions.push(`SENT: Follow-up to ${contact} — ${parsed.subject}`);
+              } else {
+                const err = await sendResponse.text();
+                executedActions.push(`FAILED: Follow-up to ${contact} — Resend error: ${err.slice(0, 100)}`);
+              }
+            }
+          }
+        } else {
+          executedActions.push(`SKIPPED: ${task.title} (no email match in title)`);
+        }
+      } else {
+        executedActions.push(`SKIPPED: ${task.title} (type=${task.type})`);
+      }
+    } catch (error) {
+      executedActions.push(`ERROR: ${agentTask.id} — ${String(error).slice(0, 100)}`);
+    }
+  }
+
+  return json({
+    processed: actionableTasks.length,
+    executedActions,
+    remainingPending: context.pendingTasks.length - actionableTasks.length,
+    timestamp: new Date().toISOString()
+  }, headers);
 }
 
 async function handleDecide(
@@ -1687,10 +1905,20 @@ async function performDailyCheck(env: Env) {
   // FULLY AUTONOMOUS: Process high-priority email tasks during daily check
   const executedActions: string[] = [];
   if (!result.needsHumanApproval && context.pendingTasks.length > 0 && env.RESEND_API_KEY) {
-    // Process up to 10 pending email tasks per cycle autonomously
+    // Process up to 3 pending email tasks per cycle autonomously (limited to avoid Worker timeout)
+    // Prioritize: follow_up and respond_email first, skip research
     const emailTasks = context.pendingTasks
       .filter(t => (t.priority === "high" || t.priority === "medium") && t.status === "pending")
-      .slice(0, 10);
+      .sort((a, b) => {
+        // Put actionable tasks first (follow_up, respond_email before research)
+        const typeOrder = (desc: string) => {
+          if (desc.includes("Follow up")) return 0;
+          if (desc.includes("Respond to")) return 1;
+          return 2;
+        };
+        return typeOrder(a.description) - typeOrder(b.description);
+      })
+      .slice(0, 3);
 
     for (const agentTask of emailTasks) {
       try {
@@ -1874,7 +2102,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
         }
       } catch (error) {
         console.error("Failed to autonomously process task:", error);
-        executedActions.push(`Failed: ${agentTask.description}`);
+        executedActions.push(`Failed: ${agentTask.description} - ${String(error)}`);
       }
     }
   }
