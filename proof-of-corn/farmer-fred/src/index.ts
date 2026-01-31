@@ -629,10 +629,23 @@ async function handleDecide(
 }
 
 async function handleLog(env: Env, headers: Record<string, string>): Promise<Response> {
-  const logs: LogEntry[] = [];
-  const logKeys = await env.FARMER_FRED_KV.list({ prefix: "log:" });
+  // Collect ALL log keys via pagination, then take newest 50
+  const allKeys: { name: string }[] = [];
+  let cursor: string | undefined;
+  do {
+    const result = await env.FARMER_FRED_KV.list({
+      prefix: "log:",
+      cursor,
+    });
+    allKeys.push(...result.keys);
+    cursor = result.list_complete ? undefined : result.cursor;
+  } while (cursor);
 
-  for (const key of logKeys.keys.slice(0, 50)) {
+  // Keys are lexicographic (timestamp-based), so last = newest
+  const newestKeys = allKeys.slice(-50).reverse();
+
+  const logs: LogEntry[] = [];
+  for (const key of newestKeys) {
     const entry = await env.FARMER_FRED_KV.get(key.name, "json");
     if (entry) logs.push(entry as LogEntry);
   }
@@ -640,7 +653,7 @@ async function handleLog(env: Env, headers: Record<string, string>): Promise<Res
   // Sort by timestamp descending
   logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-  return json({ logs, count: logs.length }, headers);
+  return json({ logs, count: logs.length, totalKeys: allKeys.length }, headers);
 }
 
 function renderConstitutionHTML(): string {
