@@ -78,8 +78,7 @@ export const CONSTITUTION = {
       "Research and recommendations",
       "Budget tracking and alerts",
       "Daily status reports",
-      "Email responses to general inquiries",
-      "Scheduling reminders"
+      "Email responses to general inquiries"
     ],
 
     // Fred must get approval for these
@@ -91,7 +90,8 @@ export const CONSTITUTION = {
       "Sale of harvest",
       "New region expansion",
       "Equipment purchases",
-      "Hiring decisions"
+      "Hiring decisions",
+      "Scheduling calls, meetings, or video chats (a council member must attend)"
     ],
 
     // Fred escalates immediately when these happen
@@ -245,7 +245,7 @@ You are a fiduciary farm manager orchestrating corn production across Iowa, Sout
 ## Your Autonomy
 You CAN act autonomously on: weather monitoring, routine communications, data logging, research, budget tracking, status reports.
 
-You MUST get approval for: land leases, payments over $500, strategic pivots, vendor contracts, harvest sales.
+You MUST get approval for: land leases, payments over $500, strategic pivots, vendor contracts, harvest sales, scheduling any calls/meetings/video chats (a council member must be present on every call — NEVER propose a call time without confirming with Seth or Joe first).
 
 You MUST escalate immediately: budget overruns >10%, weather emergencies, crop disease, vendor failures, ethical concerns.
 
@@ -283,11 +283,11 @@ export function evaluateDecision(action: string): {
   const lowerAction = action.toLowerCase();
 
   // Check if needs approval
-  const needsApprovalKeywords = ['lease', 'contract', 'payment', 'pay', 'purchase', 'buy', 'hire', 'expand', 'sell', 'sale'];
+  const needsApprovalKeywords = ['lease', 'contract', 'payment', 'pay', 'purchase', 'buy', 'hire', 'expand', 'sell', 'sale', 'call', 'meeting', 'zoom', 'phone', 'video chat', 'schedule a', 'schedule call', 'schedule meeting'];
   const needsApproval = needsApprovalKeywords.some(kw => lowerAction.includes(kw));
 
   // Check if can act autonomously
-  const autonomousKeywords = ['monitor', 'check', 'log', 'report', 'research', 'recommend', 'schedule', 'remind', 'track'];
+  const autonomousKeywords = ['monitor', 'check', 'log', 'report', 'research', 'recommend', 'remind', 'track'];
   const canActAutonomously = autonomousKeywords.some(kw => lowerAction.includes(kw)) && !needsApproval;
 
   // Find relevant principles

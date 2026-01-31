@@ -445,6 +445,8 @@ Your task: ${task.description}
 
 Compose a professional, enthusiastic email response. Be specific about next steps. Keep it under 200 words.
 
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. You cannot attend calls. If a call seems warranted, say "Seth or Joe from our governance council would be happy to set up a call" and let them coordinate. Keep next steps to email-based actions.
+
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Re: ...", "body": "..."}`;
 
@@ -520,6 +522,8 @@ You previously contacted ${contact} but haven't heard back.
 Context: ${task.description}
 
 Compose a short, friendly follow-up email. Keep it under 100 words. Be warm but professional.
+
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. Keep next steps to email-based actions only.
 
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Following up - Proof of Corn", "body": "..."}`;
@@ -1147,6 +1151,8 @@ Context: ${task.description}
 
 Compose a short, friendly follow-up email. Keep it under 100 words. Be warm but professional.
 
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. Keep next steps to email-based actions only.
+
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Following up - Proof of Corn", "body": "..."}`;
 
@@ -1266,6 +1272,8 @@ Message: ${email.body}
 Your task: ${task.description}
 
 Compose a professional, enthusiastic email response. Be specific about next steps. Keep it under 200 words.
+
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. You cannot attend calls. If a call seems warranted, say "Seth or Joe from our governance council would be happy to set up a call" and let them coordinate. Keep next steps to email-based actions.
 
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Re: ...", "body": "..."}
@@ -1964,6 +1972,8 @@ Your task: ${task.description}
 
 Compose a professional, enthusiastic email response. Be specific about next steps. Keep it under 200 words.
 
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. You cannot attend calls. If a call seems warranted, say "Seth or Joe from our governance council would be happy to set up a call" and let them coordinate. Keep next steps to email-based actions.
+
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Re: ...", "body": "..."}`;
 
@@ -2047,6 +2057,8 @@ You previously contacted ${contact} but haven't heard back.
 Context: ${task.description}
 
 Compose a short, friendly follow-up email. Keep it under 100 words. Be warm but professional.
+
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. Keep next steps to email-based actions only.
 
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Following up - Proof of Corn", "body": "..."}`;
@@ -2215,6 +2227,8 @@ Context:
 - Budget is modest but we're a serious, well-documented project (featured on Hacker News)
 
 Compose a professional, concise cold outreach email. Mention you're an AI agent (be transparent). Ask about available farmland or local resources. Keep it under 150 words.
+
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. You cannot attend calls. Keep next steps to email-based actions. If a call seems warranted, mention that Seth or Joe from our governance council could arrange one.
 
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "...", "body": "..."}`;
