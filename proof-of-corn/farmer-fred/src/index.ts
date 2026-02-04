@@ -201,8 +201,16 @@ export default {
           return await handleCommodities(env, corsHeaders);
 
         case "/partnerships/evaluate":
+          if (request.method === "GET") {
+            // Return cached evaluation (no Claude call, no log)
+            const cached = await env.FARMER_FRED_KV.get("partnerships:latest-evaluation", "json");
+            if (cached) {
+              return json(cached, corsHeaders);
+            }
+            return json({ evaluations: [], message: "No evaluation cached yet" }, corsHeaders);
+          }
           if (request.method !== "POST") {
-            return json({ error: "POST required" }, corsHeaders, 405);
+            return json({ error: "POST or GET required" }, corsHeaders, 405);
           }
           return await handleEvaluatePartnerships(env, corsHeaders);
 
@@ -1616,23 +1624,37 @@ Respond in JSON:
 
   const evaluation = JSON.parse(evaluationText);
 
-  // Log the evaluation
-  const logEntry = createLogEntry(
-    "agent",
-    "Partnership Evaluation Complete",
-    `Fred evaluated ${partnerships.length} active partnerships.\n\nTop recommendation: ${evaluation.overallRecommendation}\n\n[See /partnerships/evaluate for full analysis]`
-  );
-  await env.FARMER_FRED_KV.put(
-    `log:${Date.now()}-eval`,
-    JSON.stringify(logEntry),
-    { expirationTtl: 60 * 60 * 24 * 90 }
-  );
-
-  return json({
+  const result = {
     ...evaluation,
     timestamp: new Date().toISOString(),
     partnershipsEvaluated: partnerships.length
-  }, headers);
+  };
+
+  // Cache the evaluation result for GET requests
+  await env.FARMER_FRED_KV.put(
+    "partnerships:latest-evaluation",
+    JSON.stringify(result),
+    { expirationTtl: 60 * 60 * 24 * 7 }
+  );
+
+  // Only log if recommendation changed from last logged evaluation
+  const lastLogged = await env.FARMER_FRED_KV.get("partnerships:last-logged-recommendation");
+  const currentRec = evaluation.overallRecommendation || "";
+  if (currentRec !== lastLogged) {
+    const logEntry = createLogEntry(
+      "agent",
+      "Partnership Evaluation Complete",
+      `Fred evaluated ${partnerships.length} active partnerships.\n\nTop recommendation: ${currentRec}\n\n[See /partnerships/evaluate for full analysis]`
+    );
+    await env.FARMER_FRED_KV.put(
+      `log:${Date.now()}-eval`,
+      JSON.stringify(logEntry),
+      { expirationTtl: 60 * 60 * 24 * 90 }
+    );
+    await env.FARMER_FRED_KV.put("partnerships:last-logged-recommendation", currentRec);
+  }
+
+  return json(result, headers);
 }
 
 async function handleOutreachTargets(env: Env, headers: Record<string, string>): Promise<Response> {

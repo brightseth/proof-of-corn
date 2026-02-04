@@ -276,10 +276,10 @@ export default function DashboardPage() {
     }
     setLoading(false);
 
-    // Slow endpoints in background — partnerships calls Claude (~20s)
+    // Slow endpoints in background — partnerships fetches cached evaluation (no Claude call)
     try {
       const [partnershipsRes, analyticsRes] = await Promise.all([
-        fetch(`${FRED_API}/partnerships/evaluate`, { method: 'POST' }),
+        fetch(`${FRED_API}/partnerships/evaluate`),
         fetch(`/api/analytics`),
       ]);
       if (partnershipsRes.ok) { const data = await partnershipsRes.json(); setPartnerships(data.evaluations || []); }
