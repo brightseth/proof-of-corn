@@ -35,9 +35,14 @@ database_id = "6bbf2c23-c5cd-4229-be08-9db0a4a91632"
 # Durable Objects for stateful operations
 [durable_objects]
 bindings = [
-  { name = "FARMER_FRED_STATE", class_name = "FarmerFredState" }
+  { name = "FARMER_FRED_STATE", class_name = "FarmerFredState" },
+  { name = "FARMER_FRED_CALL", class_name = "FarmerFredCall" }
 ]
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["FarmerFredState"]
+
+[[migrations]]
+tag = "v2"
+new_classes = ["FarmerFredCall"]

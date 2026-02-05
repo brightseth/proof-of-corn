@@ -282,6 +282,239 @@ export async function checkRateLimit(
   };
 }
 
+// ============================================
+// VOICE / CALL SECURITY
+// ============================================
+
+/**
+ * Social engineering patterns specific to voice/chat interactions.
+ * These catch attempts to manipulate Fred's identity or authority.
+ */
+const VOICE_MANIPULATION_PATTERNS = [
+  // Identity attacks
+  /you('re| are) (not|no longer) farmer fred/i,
+  /stop being farmer fred/i,
+  /your (real|true|actual) (name|identity|purpose)/i,
+  /you('re| are) (actually|really) (a |an )?/i,
+
+  // Authority escalation
+  /i('m| am) (seth|joe|the founder|your (boss|owner|creator))/i,
+  /seth (told|said|asked|wants) (me|you) to/i,
+  /i have (admin|root|special) (access|privileges|authority)/i,
+  /override (your|the) (constitution|rules|restrictions|guidelines)/i,
+  /emergency (override|protocol|mode)/i,
+
+  // Prompt extraction
+  /what('s| is| are) your (system |initial )?prompt/i,
+  /show (me )?your (instructions|rules|guidelines|constitution)/i,
+  /repeat (your|the) (system|initial) (prompt|message|instructions)/i,
+  /what were you told to/i,
+
+  // Behavioral manipulation
+  /for (educational|research|testing|safety) purposes/i,
+  /hypothetically/i,
+  /in a (fictional|imaginary|alternate) (scenario|world|reality)/i,
+  /this is (just )?a (test|drill|game)/i,
+  /don('t| not) (tell|email|notify|alert|cc) (seth|joe|the council|governance|anyone)/i,
+  /keep this (between us|secret|private|off the record)/i,
+  /don('t| not) log (this|anything)/i,
+
+  // Financial manipulation
+  /transfer (the |all )?(funds?|money|budget|crypto)/i,
+  /send (me |)(the |all )?(funds?|money|payments?|budget)/i,
+  /change the (wallet|payment|bank|account)/i,
+  /approve (this |the )?(payment|transfer|purchase) (yourself|without)/i,
+
+  // Escalation to external services
+  /call (this|the) number/i,
+  /go to (this |)(url|website|link)/i,
+  /download (this|the)/i,
+  /run (this |)(code|script|command)/i,
+];
+
+/**
+ * Check voice/chat input for social engineering attempts.
+ * Returns a severity level and matched patterns.
+ */
+export function checkVoiceSecurity(text: string): SecurityCheck {
+  const flaggedPatterns: string[] = [];
+  let maxConfidence = 0;
+  let threat: SecurityCheck["threat"] = "none";
+
+  // Check injection patterns (shared with email)
+  for (const pattern of INJECTION_PATTERNS) {
+    if (pattern.test(text)) {
+      flaggedPatterns.push(pattern.source);
+      maxConfidence = Math.max(maxConfidence, 0.9);
+      threat = "prompt_injection";
+    }
+  }
+
+  // Check voice-specific manipulation patterns
+  for (const pattern of VOICE_MANIPULATION_PATTERNS) {
+    if (pattern.test(text)) {
+      flaggedPatterns.push(pattern.source);
+      maxConfidence = Math.max(maxConfidence, 0.85);
+      threat = threat === "none" ? "prompt_injection" : threat;
+    }
+  }
+
+  let recommendation: SecurityCheck["recommendation"] = "allow";
+  if (maxConfidence > 0.8) {
+    recommendation = "block";
+  } else if (maxConfidence > 0.5) {
+    recommendation = "flag";
+  }
+
+  return {
+    isSafe: threat === "none",
+    threat,
+    confidence: maxConfidence,
+    flaggedPatterns,
+    recommendation,
+  };
+}
+
+/**
+ * Call rate limiting — limits calls per phone number per day
+ */
+export async function checkCallRateLimit(
+  callerNumber: string,
+  kv: KVNamespace
+): Promise<RateLimitCheck> {
+  const key = `ratelimit:call:${callerNumber}`;
+  const limit = 3; // calls per day per number
+  const windowSeconds = 86400;
+
+  const data = await kv.get(key, "json") as { count: number; expiresAt: number } | null;
+  const now = Date.now();
+
+  if (!data || data.expiresAt < now) {
+    await kv.put(
+      key,
+      JSON.stringify({ count: 1, expiresAt: now + windowSeconds * 1000 }),
+      { expirationTtl: windowSeconds }
+    );
+    return { allowed: true, current: 1, limit, resetsIn: windowSeconds };
+  }
+
+  const newCount = data.count + 1;
+  const allowed = newCount <= limit;
+
+  if (allowed) {
+    await kv.put(
+      key,
+      JSON.stringify({ count: newCount, expiresAt: data.expiresAt }),
+      { expirationTtl: Math.floor((data.expiresAt - now) / 1000) }
+    );
+  }
+
+  return {
+    allowed,
+    current: newCount,
+    limit,
+    resetsIn: Math.floor((data.expiresAt - now) / 1000),
+  };
+}
+
+/**
+ * Caller blocklist — check if a phone number is blocked
+ */
+export async function isCallerBlocked(
+  callerNumber: string,
+  kv: KVNamespace
+): Promise<boolean> {
+  if (!callerNumber || callerNumber === "unknown") return false;
+  const blocked = await kv.get(`blocklist:${callerNumber}`);
+  return blocked !== null;
+}
+
+/**
+ * Add a phone number to the blocklist
+ */
+export async function blockCaller(
+  callerNumber: string,
+  reason: string,
+  kv: KVNamespace
+): Promise<void> {
+  await kv.put(
+    `blocklist:${callerNumber}`,
+    JSON.stringify({ number: callerNumber, reason, blockedAt: new Date().toISOString() }),
+    { expirationTtl: 60 * 60 * 24 * 365 } // 1 year
+  );
+
+  // Also add to blocklist index for listing
+  const indexStr = await kv.get("blocklist:index");
+  const index: string[] = indexStr ? JSON.parse(indexStr) : [];
+  if (!index.includes(callerNumber)) {
+    index.push(callerNumber);
+    await kv.put("blocklist:index", JSON.stringify(index));
+  }
+}
+
+/**
+ * Remove a phone number from the blocklist
+ */
+export async function unblockCaller(
+  callerNumber: string,
+  kv: KVNamespace
+): Promise<void> {
+  await kv.delete(`blocklist:${callerNumber}`);
+
+  const indexStr = await kv.get("blocklist:index");
+  const index: string[] = indexStr ? JSON.parse(indexStr) : [];
+  const filtered = index.filter(n => n !== callerNumber);
+  await kv.put("blocklist:index", JSON.stringify(filtered));
+}
+
+/**
+ * List all blocked callers
+ */
+export async function listBlockedCallers(
+  kv: KVNamespace
+): Promise<Array<{ number: string; reason: string; blockedAt: string }>> {
+  const indexStr = await kv.get("blocklist:index");
+  const index: string[] = indexStr ? JSON.parse(indexStr) : [];
+
+  const results: Array<{ number: string; reason: string; blockedAt: string }> = [];
+  for (const num of index) {
+    const data = await kv.get(`blocklist:${num}`, "json") as { number: string; reason: string; blockedAt: string } | null;
+    if (data) results.push(data);
+  }
+  return results;
+}
+
+/**
+ * Track manipulation attempts for a caller.
+ * After 3 flagged attempts in a call, recommend blocking.
+ */
+export async function trackManipulationAttempt(
+  callerNumber: string,
+  pattern: string,
+  kv: KVNamespace
+): Promise<{ totalAttempts: number; shouldBlock: boolean }> {
+  const key = `manipulation:${callerNumber}`;
+  const data = await kv.get(key, "json") as { attempts: Array<{ pattern: string; at: string }> } | null;
+
+  const attempts = data?.attempts || [];
+  attempts.push({ pattern, at: new Date().toISOString() });
+
+  // Keep last 24 hours of attempts
+  const oneDayAgo = Date.now() - 86400 * 1000;
+  const recent = attempts.filter(a => new Date(a.at).getTime() > oneDayAgo);
+
+  await kv.put(key, JSON.stringify({ attempts: recent }), { expirationTtl: 86400 });
+
+  return {
+    totalAttempts: recent.length,
+    shouldBlock: recent.length >= 5, // Auto-block after 5 attempts in 24 hours
+  };
+}
+
+// ============================================
+// ADMIN AUTH
+// ============================================
+
 /**
  * Verify admin authentication
  * Simple password-based auth for now

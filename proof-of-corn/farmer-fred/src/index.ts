@@ -16,6 +16,24 @@
  *   POST /learnings     - Add a new learning
  *   GET  /feedback      - View community feedback
  *   POST /feedback      - Submit feedback to help Fred improve
+ *
+ * Voice (Twilio + ElevenLabs):
+ *   POST /voice/incoming  - Twilio webhook for incoming calls (returns TwiML)
+ *   POST /voice/outgoing  - Initiate outbound call (requires approval)
+ *   GET  /voice/ws        - WebSocket for Twilio Media Streams
+ *   POST /voice/status    - Twilio call status callback
+ *   POST /voice/webhook   - ElevenLabs post-call webhook (transcript sync)
+ *   POST /voice/sync      - Pull conversations from ElevenLabs API (admin)
+ *   POST /voice/configure - Update agent config: prompt, tools, webhook (admin)
+ *   POST /voice/blocklist - Manage caller blocklist: block, unblock, list (admin)
+ *   GET  /voice/tools/weather   - Mid-call tool: weather data
+ *   GET  /voice/tools/status    - Mid-call tool: farm status
+ *   GET  /voice/tools/calls     - Mid-call tool: recent call history
+ *   GET  /voice/tools/community - Mid-call tool: HN + community feedback
+ *   POST /voice/tools/save-contact - Mid-call tool: save caller contact info
+ *   GET  /contacts         - Contact CRM list (admin)
+ *   GET  /calls           - Call history log
+ *   GET  /calls/:callSid  - Single call detail with transcript
  */
 
 import { FarmerFredAgent, AgentContext } from "./agent";
@@ -34,6 +52,27 @@ import {
   verifyAdminAuth,
   SecurityCheck
 } from "./security";
+import {
+  handleIncomingCall,
+  handleOutgoingCall,
+  handleCallStatus,
+  handleCallHistory,
+  handleCallDetail,
+  handlePostCallWebhook,
+  handleConversationSync,
+  handleVoiceToolWeather,
+  handleVoiceToolStatus,
+  handleVoiceToolCalls,
+  handleVoiceToolCommunity,
+  handleConfigureAgent,
+  handleBlocklist,
+  handleVoiceToolSaveContact,
+  handleContacts,
+  extractCallLearnings,
+  getCallLearningsPrompt,
+} from "./voice";
+import { heartbeat as moltbookHeartbeat, getMoltbookStatus } from "./tools/moltbook";
+export { FarmerFredCall } from "./voice";
 
 function stripCodeBlocks(text: string): string {
   return text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
@@ -47,12 +86,35 @@ export interface Env {
   FARMER_FRED_KV: KVNamespace;
   FARMER_FRED_DB: D1Database;
   FARMER_FRED_STATE: DurableObjectNamespace;
+  FARMER_FRED_CALL: DurableObjectNamespace;
   AGENT_NAME: string;
   AGENT_VERSION: string;
+  // Twilio
+  TWILIO_ACCOUNT_SID: string;
+  TWILIO_AUTH_TOKEN: string;
+  TWILIO_PHONE_NUMBER: string;
+  // ElevenLabs
+  ELEVENLABS_API_KEY: string;
+  ELEVENLABS_AGENT_ID: string;
+  // Moltbook
+  MOLTBOOK_API_KEY?: string;
 }
 
 // Seth's known email addresses (for forward detection)
 const SETH_ADDRESSES = ["sethgoldstein@gmail.com", "seth@slashvibe.dev"];
+
+// Joe Nelson's known email addresses (governance council member)
+const JOE_ADDRESSES = ["joseph.nelson@roboflow.com", "joseph.nelson2012@gmail.com"];
+
+// All governance member addresses (for sender recognition)
+const GOVERNANCE_ADDRESSES = [...SETH_ADDRESSES, ...JOE_ADDRESSES];
+
+// Governance council — all members CC'd on outbound emails
+const GOVERNANCE_COUNCIL = [
+  { name: "Seth Goldstein", email: "sethgoldstein@gmail.com", role: "founder" },
+  { name: "Joe Nelson", email: "joseph.nelson@roboflow.com", role: "farming-advisor" },
+];
+const GOVERNANCE_CC = GOVERNANCE_COUNCIL.map(m => m.email);
 
 // ============================================
 // MAIN WORKER
@@ -115,6 +177,12 @@ export default {
             return json({ error: "POST required" }, corsHeaders, 405);
           }
           return await handleDailyCheck(env, ctx, corsHeaders);
+
+        case "/execute":
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          return await handleExecuteTasks(env, corsHeaders);
 
         case "/decide":
           if (request.method !== "POST") {
@@ -201,15 +269,133 @@ export default {
           return await handleCommodities(env, corsHeaders);
 
         case "/partnerships/evaluate":
+          if (request.method === "GET") {
+            const cached = await env.FARMER_FRED_KV.get("partnerships:latest-evaluation", "json");
+            if (cached) return json(cached, corsHeaders);
+            return json({ evaluations: [], message: "No evaluation cached yet" }, corsHeaders);
+          }
           if (request.method !== "POST") {
-            return json({ error: "POST required" }, corsHeaders, 405);
+            return json({ error: "POST or GET required" }, corsHeaders, 405);
           }
           return await handleEvaluatePartnerships(env, corsHeaders);
 
         case "/outreach-targets":
           return await handleOutreachTargets(env, corsHeaders);
 
+        // ============================================
+        // VOICE CALL ROUTES
+        // ============================================
+
+        case "/voice/incoming":
+          // Twilio webhook for incoming calls — returns TwiML
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          return await handleIncomingCall(request, env, url.origin);
+
+        case "/voice/outgoing":
+          // Initiate an outbound call (requires governance approval)
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          return await handleOutgoingCall(request, env);
+
+        case "/voice/ws": {
+          // WebSocket endpoint for Twilio Media Streams → Durable Object
+          if (request.headers.get("Upgrade") !== "websocket") {
+            return new Response("Expected WebSocket upgrade", { status: 426 });
+          }
+          const callSid = url.searchParams.get("callSid") || `call-${Date.now()}`;
+          const callId = env.FARMER_FRED_CALL.idFromName(callSid);
+          const callObj = env.FARMER_FRED_CALL.get(callId);
+          // Forward the WebSocket request to the Durable Object
+          const doUrl = new URL(request.url);
+          doUrl.pathname = "/ws";
+          return callObj.fetch(new Request(doUrl.toString(), request));
+        }
+
+        case "/voice/status":
+          // Twilio call status callback
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          return await handleCallStatus(request, env);
+
+        case "/voice/webhook":
+          // ElevenLabs post-call webhook — receives transcript after each call
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          return await handlePostCallWebhook(request, env);
+
+        case "/voice/sync":
+          // Sync conversations from ElevenLabs API
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          if (!verifyAdminAuth(request, env.ADMIN_PASSWORD)) {
+            return json({ error: "Unauthorized" }, corsHeaders, 401);
+          }
+          return await handleConversationSync(env, corsHeaders);
+
+        case "/voice/configure":
+          // Update ElevenLabs agent config (tools, prompt, webhook)
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          if (!verifyAdminAuth(request, env.ADMIN_PASSWORD)) {
+            return json({ error: "Unauthorized" }, corsHeaders, 401);
+          }
+          return await handleConfigureAgent(request, env, corsHeaders);
+
+        case "/voice/blocklist":
+          // Manage caller blocklist (block, unblock, list)
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          if (!verifyAdminAuth(request, env.ADMIN_PASSWORD)) {
+            return json({ error: "Unauthorized" }, corsHeaders, 401);
+          }
+          return await handleBlocklist(request, env, corsHeaders);
+
+        // ElevenLabs mid-call tool endpoints
+        case "/voice/tools/weather":
+          return await handleVoiceToolWeather(request, env);
+
+        case "/voice/tools/status":
+          return await handleVoiceToolStatus(request, env);
+
+        case "/voice/tools/calls":
+          return await handleVoiceToolCalls(request, env);
+
+        case "/voice/tools/community":
+          return await handleVoiceToolCommunity(request, env);
+
+        case "/voice/tools/save-contact":
+          return await handleVoiceToolSaveContact(request, env);
+
+        case "/contacts":
+          // Contact CRM — admin only
+          if (!verifyAdminAuth(request, env.ADMIN_PASSWORD)) {
+            return json({ error: "Unauthorized" }, corsHeaders, 401);
+          }
+          return await handleContacts(env, corsHeaders);
+
+        case "/calls":
+          // Call history log
+          return await handleCallHistory(env, corsHeaders);
+
+        case "/moltbook":
+          // Moltbook agent social network status
+          const moltStatus = await getMoltbookStatus(env);
+          return json(moltStatus, corsHeaders);
+
         default:
+          // Check for /calls/:callSid pattern
+          if (path.startsWith("/calls/") && path.split("/").length === 3) {
+            const callSid = path.split("/")[2];
+            return await handleCallDetail(callSid, env, corsHeaders);
+          }
           return json({ error: "Not found", path }, corsHeaders, 404);
       }
     } catch (error) {
@@ -250,7 +436,7 @@ export default {
 
       // Store result in KV
       await env.FARMER_FRED_KV.put(
-        `daily-check:${now.toISOString().split("T")[0]}-${now.getUTCHours()}`,
+        `daily-check:${now.toISOString().split("T")[0]}`,
         JSON.stringify(result),
         { expirationTtl: 60 * 60 * 24 * 30 } // 30 days
       );
@@ -269,6 +455,37 @@ export default {
         });
       } catch (hnError) {
         console.error("HN sync failed (non-critical):", hnError);
+      }
+
+      // Sync voice conversations from ElevenLabs (catches missed webhooks)
+      try {
+        if (env.ELEVENLABS_API_KEY && env.ELEVENLABS_AGENT_ID) {
+          const syncRes = await handleConversationSync(env, {});
+          const syncData = await syncRes.json() as { synced?: number; skipped?: number };
+          console.log("Voice sync completed:", syncData);
+
+          // Extract call learnings for prompt enrichment
+          const learnings = await extractCallLearnings(env);
+          console.log("Call learnings updated:", {
+            totalCalls: learnings.totalCalls,
+            topics: learnings.topics.length,
+          });
+        }
+      } catch (voiceError) {
+        console.error("Voice sync failed (non-critical):", voiceError);
+      }
+
+      // Moltbook heartbeat — post status update to s/proofofcorn
+      try {
+        if (env.MOLTBOOK_API_KEY) {
+          const summary = result.decision
+            ? `Fred's latest check: ${typeof result.decision === 'string' ? result.decision.slice(0, 300) : JSON.stringify(result.decision).slice(0, 300)}`
+            : "Routine 6-hour check completed. All systems operational.";
+          const moltResult = await moltbookHeartbeat(env, summary);
+          console.log("Moltbook heartbeat:", moltResult.action);
+        }
+      } catch (moltError) {
+        console.error("Moltbook heartbeat failed (non-critical):", moltError);
       }
     } catch (error) {
       console.error("Cron job failed:", error);
@@ -368,6 +585,222 @@ async function handleDailyCheck(
   return json(result, headers);
 }
 
+// Execute pending tasks directly (no Claude planning call, just process tasks from KV)
+async function handleExecuteTasks(
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const context = await buildAgentContext(env);
+  const executedActions: string[] = [];
+
+  if (!env.RESEND_API_KEY) {
+    return json({ error: "RESEND_API_KEY not configured" }, headers, 500);
+  }
+
+  // Get actionable tasks (follow_up and respond_email only, skip research)
+  // We need to look up task types from KV since context only has description
+  const allPending = context.pendingTasks
+    .filter(t => t.status === "pending" && (t.priority === "high" || t.priority === "medium"));
+
+  // Filter to only email-actionable tasks by checking KV for type
+  const actionableTasks: typeof allPending = [];
+  for (const t of allPending) {
+    if (actionableTasks.length >= 3) break;
+    const fullTask = await env.FARMER_FRED_KV.get(`task:${t.id}`, "json") as Task | null;
+    if (fullTask && (fullTask.type === "follow_up" || fullTask.type === "respond_email")) {
+      actionableTasks.push(t);
+    }
+  }
+
+  console.log(`[EXECUTE] Processing ${actionableTasks.length} tasks`);
+
+  for (const agentTask of actionableTasks) {
+    try {
+      const task = await env.FARMER_FRED_KV.get(`task:${agentTask.id}`, "json") as Task | null;
+      if (!task) continue;
+
+      console.log(`[EXECUTE] Task: type=${task.type}, title=${task.title?.slice(0, 60)}`);
+
+      if (task.type === "respond_email" && task.relatedEmailId) {
+        const email = await env.FARMER_FRED_KV.get(`email:${task.relatedEmailId}`, "json") as Email | null;
+        if (email) {
+          let actualSender = email.from;
+          let ccRecipient: string | undefined;
+          const forwardMatch = email.body?.match(/From:\s*(?:.*?<)?([^\s<>]+@[^\s<>]+)(?:>)?/i);
+          if (forwardMatch && SETH_ADDRESSES.includes(email.from.toLowerCase())) {
+            actualSender = forwardMatch[1];
+            ccRecipient = email.from;
+          }
+
+          const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
+
+You received this email${ccRecipient ? " (forwarded by Seth)" : ""}:
+From: ${actualSender}
+Subject: ${email.subject}
+Message: ${email.body}
+
+Your task: ${task.description}
+
+Compose a professional, enthusiastic email response. Be specific about next steps. Keep it under 200 words.
+
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. You cannot attend calls. If a call seems warranted, say "Seth or Joe from our governance council would be happy to set up a call" and let them coordinate. Keep next steps to email-based actions.
+
+IMPORTANT: Respond ONLY with valid JSON in this exact format:
+{"subject": "Re: ...", "body": "..."}`;
+
+          const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": env.ANTHROPIC_API_KEY,
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 1024,
+              messages: [{ role: "user", content: emailPrompt }]
+            })
+          });
+
+          if (claudeResponse.ok) {
+            const data: any = await claudeResponse.json();
+            const emailContent = data.content?.[0]?.text;
+            if (emailContent) {
+              const parsed = JSON.parse(stripCodeBlocks(emailContent));
+              const emailPayload: any = {
+                from: "Farmer Fred <fred@proofofcorn.com>",
+                to: actualSender,
+                subject: parsed.subject,
+                text: parsed.body
+              };
+              emailPayload.cc = ccRecipient || GOVERNANCE_CC;
+
+              const sendResponse = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify(emailPayload)
+              });
+
+              if (sendResponse.ok) {
+                task.status = "completed";
+                await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
+                email.status = "replied";
+                await env.FARMER_FRED_KV.put(`email:${email.id}`, JSON.stringify(email));
+
+                const outreachLog = createLogEntry(
+                  "outreach",
+                  `Email sent to ${actualSender} (CC: governance council)`,
+                  `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Executed via /execute endpoint]`
+                );
+                await env.FARMER_FRED_KV.put(
+                  `log:${Date.now()}-exec-email`,
+                  JSON.stringify(outreachLog),
+                  { expirationTtl: 60 * 60 * 24 * 90 }
+                );
+                await scheduleFollowUp(env, actualSender, email.category, parsed.subject);
+                executedActions.push(`SENT: Email to ${actualSender} — ${parsed.subject}`);
+              } else {
+                const err = await sendResponse.text();
+                executedActions.push(`FAILED: Email to ${actualSender} — Resend error: ${err.slice(0, 100)}`);
+              }
+            }
+          }
+        }
+      } else if (task.type === "follow_up") {
+        const contactMatch = task.title.match(/Follow up with\s+(\S+@\S+)/i);
+        if (contactMatch) {
+          const contact = contactMatch[1];
+
+          const followUpPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
+
+You previously contacted ${contact} but haven't heard back.
+Context: ${task.description}
+
+Compose a short, friendly follow-up email. Keep it under 100 words. Be warm but professional.
+
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. Keep next steps to email-based actions only.
+
+IMPORTANT: Respond ONLY with valid JSON in this exact format:
+{"subject": "Following up - Proof of Corn", "body": "..."}`;
+
+          const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": env.ANTHROPIC_API_KEY,
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 512,
+              messages: [{ role: "user", content: followUpPrompt }]
+            })
+          });
+
+          if (claudeResponse.ok) {
+            const data: any = await claudeResponse.json();
+            const emailContent = data.content?.[0]?.text;
+            if (emailContent) {
+              const parsed = JSON.parse(stripCodeBlocks(emailContent));
+              const sendResponse = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  from: "Farmer Fred <fred@proofofcorn.com>",
+                  to: contact,
+                  subject: parsed.subject,
+                  text: parsed.body,
+                  cc: GOVERNANCE_CC
+                })
+              });
+
+              if (sendResponse.ok) {
+                task.status = "completed";
+                await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
+                await scheduleFollowUp(env, contact, "lead", parsed.subject);
+
+                const outreachLog = createLogEntry(
+                  "outreach",
+                  `Follow-up sent to ${contact} (CC: governance council)`,
+                  `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Follow-up via /execute endpoint]`
+                );
+                await env.FARMER_FRED_KV.put(
+                  `log:${Date.now()}-exec-followup`,
+                  JSON.stringify(outreachLog),
+                  { expirationTtl: 60 * 60 * 24 * 90 }
+                );
+                executedActions.push(`SENT: Follow-up to ${contact} — ${parsed.subject}`);
+              } else {
+                const err = await sendResponse.text();
+                executedActions.push(`FAILED: Follow-up to ${contact} — Resend error: ${err.slice(0, 100)}`);
+              }
+            }
+          }
+        } else {
+          executedActions.push(`SKIPPED: ${task.title} (no email match in title)`);
+        }
+      } else {
+        executedActions.push(`SKIPPED: ${task.title} (type=${task.type})`);
+      }
+    } catch (error) {
+      executedActions.push(`ERROR: ${agentTask.id} — ${String(error).slice(0, 100)}`);
+    }
+  }
+
+  return json({
+    processed: actionableTasks.length,
+    executedActions,
+    remainingPending: context.pendingTasks.length - actionableTasks.length,
+    timestamp: new Date().toISOString()
+  }, headers);
+}
+
 async function handleDecide(
   request: Request,
   env: Env,
@@ -398,10 +831,23 @@ async function handleDecide(
 }
 
 async function handleLog(env: Env, headers: Record<string, string>): Promise<Response> {
-  const logs: LogEntry[] = [];
-  const logKeys = await env.FARMER_FRED_KV.list({ prefix: "log:" });
+  // Collect ALL log keys via pagination, then take newest 50
+  const allKeys: { name: string }[] = [];
+  let cursor: string | undefined;
+  do {
+    const result = await env.FARMER_FRED_KV.list({
+      prefix: "log:",
+      cursor,
+    });
+    allKeys.push(...result.keys);
+    cursor = result.list_complete ? undefined : result.cursor;
+  } while (cursor);
 
-  for (const key of logKeys.keys.slice(0, 50)) {
+  // Keys are lexicographic (timestamp-based), so last = newest
+  const newestKeys = allKeys.slice(-50).reverse();
+
+  const logs: LogEntry[] = [];
+  for (const key of newestKeys) {
     const entry = await env.FARMER_FRED_KV.get(key.name, "json");
     if (entry) logs.push(entry as LogEntry);
   }
@@ -409,7 +855,7 @@ async function handleLog(env: Env, headers: Record<string, string>): Promise<Res
   // Sort by timestamp descending
   logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-  return json({ logs, count: logs.length }, headers);
+  return json({ logs, count: logs.length, totalKeys: allKeys.length }, headers);
 }
 
 function renderConstitutionHTML(): string {
@@ -903,6 +1349,8 @@ Context: ${task.description}
 
 Compose a short, friendly follow-up email. Keep it under 100 words. Be warm but professional.
 
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. Keep next steps to email-based actions only.
+
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Following up - Proof of Corn", "body": "..."}`;
 
@@ -938,7 +1386,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
         to: contact,
         subject: parsed.subject,
         text: parsed.body,
-        cc: "sethgoldstein@gmail.com"
+        cc: GOVERNANCE_CC
       };
 
       const sendResponse = await fetch("https://api.resend.com/emails", {
@@ -967,7 +1415,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
       // Log outreach
       const outreachLog = createLogEntry(
         "outreach",
-        `Follow-up email sent to ${contact} (CC: sethgoldstein@gmail.com)`,
+        `Follow-up email sent to ${contact} (CC: governance council)`,
         `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...`
       );
       await env.FARMER_FRED_KV.put(
@@ -981,7 +1429,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
         task: task.id,
         email: {
           to: contact,
-          cc: "sethgoldstein@gmail.com",
+          cc: GOVERNANCE_CC,
           subject: parsed.subject,
           body: parsed.body,
           messageId: sendResult.id
@@ -1022,6 +1470,8 @@ Message: ${email.body}
 Your task: ${task.description}
 
 Compose a professional, enthusiastic email response. Be specific about next steps. Keep it under 200 words.
+
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. You cannot attend calls. If a call seems warranted, say "Seth or Joe from our governance council would be happy to set up a call" and let them coordinate. Keep next steps to email-based actions.
 
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Re: ...", "body": "..."}
@@ -1071,7 +1521,7 @@ Do not include any other text or formatting.`;
     };
 
     // Always CC Seth; use forwarding address if available
-    emailPayload.cc = ccRecipient || "sethgoldstein@gmail.com";
+    emailPayload.cc = ccRecipient || GOVERNANCE_CC;
 
     const sendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -1616,23 +2066,37 @@ Respond in JSON:
 
   const evaluation = JSON.parse(evaluationText);
 
-  // Log the evaluation
-  const logEntry = createLogEntry(
-    "agent",
-    "Partnership Evaluation Complete",
-    `Fred evaluated ${partnerships.length} active partnerships.\n\nTop recommendation: ${evaluation.overallRecommendation}\n\n[See /partnerships/evaluate for full analysis]`
-  );
-  await env.FARMER_FRED_KV.put(
-    `log:${Date.now()}-eval`,
-    JSON.stringify(logEntry),
-    { expirationTtl: 60 * 60 * 24 * 90 }
-  );
-
-  return json({
+  const result = {
     ...evaluation,
     timestamp: new Date().toISOString(),
     partnershipsEvaluated: partnerships.length
-  }, headers);
+  };
+
+  // Cache evaluation for GET requests
+  await env.FARMER_FRED_KV.put(
+    "partnerships:latest-evaluation",
+    JSON.stringify(result),
+    { expirationTtl: 60 * 60 * 24 * 7 }
+  );
+
+  // Only log when recommendation changes
+  const lastLogged = await env.FARMER_FRED_KV.get("partnerships:last-logged-recommendation");
+  const currentRec = evaluation.overallRecommendation || "";
+  if (currentRec !== lastLogged) {
+    const logEntry = createLogEntry(
+      "agent",
+      "Partnership Evaluation Complete",
+      `Fred evaluated ${partnerships.length} active partnerships.\n\nTop recommendation: ${currentRec}\n\n[See /partnerships/evaluate for full analysis]`
+    );
+    await env.FARMER_FRED_KV.put(
+      `log:${Date.now()}-eval`,
+      JSON.stringify(logEntry),
+      { expirationTtl: 60 * 60 * 24 * 90 }
+    );
+    await env.FARMER_FRED_KV.put("partnerships:last-logged-recommendation", currentRec);
+  }
+
+  return json(result, headers);
 }
 
 async function handleOutreachTargets(env: Env, headers: Record<string, string>): Promise<Response> {
@@ -1674,10 +2138,20 @@ async function performDailyCheck(env: Env) {
   // FULLY AUTONOMOUS: Process high-priority email tasks during daily check
   const executedActions: string[] = [];
   if (!result.needsHumanApproval && context.pendingTasks.length > 0 && env.RESEND_API_KEY) {
-    // Process up to 10 pending email tasks per cycle autonomously
+    // Process up to 3 pending email tasks per cycle autonomously (limited to avoid Worker timeout)
+    // Prioritize: follow_up and respond_email first, skip research
     const emailTasks = context.pendingTasks
       .filter(t => (t.priority === "high" || t.priority === "medium") && t.status === "pending")
-      .slice(0, 10);
+      .sort((a, b) => {
+        // Put actionable tasks first (follow_up, respond_email before research)
+        const typeOrder = (desc: string) => {
+          if (desc.includes("Follow up")) return 0;
+          if (desc.includes("Respond to")) return 1;
+          return 2;
+        };
+        return typeOrder(a.description) - typeOrder(b.description);
+      })
+      .slice(0, 3);
 
     for (const agentTask of emailTasks) {
       try {
@@ -1710,6 +2184,8 @@ Your task: ${task.description}
 
 Compose a professional, enthusiastic email response. Be specific about next steps. Keep it under 200 words.
 
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. You cannot attend calls. If a call seems warranted, say "Seth or Joe from our governance council would be happy to set up a call" and let them coordinate. Keep next steps to email-based actions.
+
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Re: ...", "body": "..."}`;
 
@@ -1741,7 +2217,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                   subject: parsed.subject,
                   text: parsed.body
                 };
-                emailPayload.cc = ccRecipient || "sethgoldstein@gmail.com";
+                emailPayload.cc = ccRecipient || GOVERNANCE_CC;
 
                 const sendResponse = await fetch("https://api.resend.com/emails", {
                   method: "POST",
@@ -1794,6 +2270,8 @@ Context: ${task.description}
 
 Compose a short, friendly follow-up email. Keep it under 100 words. Be warm but professional.
 
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. Keep next steps to email-based actions only.
+
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Following up - Proof of Corn", "body": "..."}`;
 
@@ -1823,7 +2301,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                   to: contact,
                   subject: parsed.subject,
                   text: parsed.body,
-                  cc: "sethgoldstein@gmail.com"
+                  cc: GOVERNANCE_CC
                 };
 
                 const sendResponse = await fetch("https://api.resend.com/emails", {
@@ -1844,7 +2322,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 
                   const outreachLog = createLogEntry(
                     "outreach",
-                    `Autonomous follow-up sent to ${contact} (CC: sethgoldstein@gmail.com)`,
+                    `Autonomous follow-up sent to ${contact} (CC: governance council)`,
                     `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Follow-up sent during daily check]`
                   );
                   await env.FARMER_FRED_KV.put(
@@ -1861,7 +2339,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
         }
       } catch (error) {
         console.error("Failed to autonomously process task:", error);
-        executedActions.push(`Failed: ${agentTask.description}`);
+        executedActions.push(`Failed: ${agentTask.description} - ${String(error)}`);
       }
     }
   }
@@ -1962,6 +2440,8 @@ Context:
 
 Compose a professional, concise cold outreach email. Mention you're an AI agent (be transparent). Ask about available farmland or local resources. Keep it under 150 words.
 
+CRITICAL: NEVER propose or schedule a phone call, video chat, Zoom, or meeting. You cannot attend calls. Keep next steps to email-based actions. If a call seems warranted, mention that Seth or Joe from our governance council could arrange one.
+
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "...", "body": "..."}`;
 
@@ -1991,7 +2471,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                   to: target.email,
                   subject: parsed.subject,
                   text: parsed.body,
-                  cc: "sethgoldstein@gmail.com"
+                  cc: GOVERNANCE_CC
                 };
 
                 const sendResponse = await fetch("https://api.resend.com/emails", {
@@ -2069,17 +2549,23 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 }
 
 async function buildAgentContext(env: Env): Promise<AgentContext> {
-  // Fetch weather
+  // Fetch weather — all 3 regions
   let weather = null;
+  let allWeatherData: AgentContext["allWeather"] = undefined;
   try {
     const allWeather = await fetchAllRegionsWeather(env.OPENWEATHER_API_KEY);
-    weather = allWeather[0] ? {
-      region: allWeather[0].region,
-      temperature: allWeather[0].temperature,
-      conditions: allWeather[0].conditions,
-      forecast: allWeather[0].forecast,
-      plantingViable: allWeather[0].plantingViable
-    } : null;
+
+    // Pass all regions to the agent
+    allWeatherData = allWeather.map(w => ({
+      region: w.region,
+      temperature: w.temperature,
+      conditions: w.conditions,
+      forecast: w.forecast,
+      plantingViable: w.plantingViable,
+    }));
+
+    // Keep first region as primary (backward compat)
+    weather = allWeatherData[0] || null;
 
     // Alert on weather emergencies (frost risk during planting season)
     for (const rw of allWeather) {
@@ -2137,26 +2623,61 @@ async function buildAgentContext(env: Env): Promise<AgentContext> {
     }
   }
 
-  // Get recent decisions
+  // Get recent decisions from daily-check outputs (last 5)
   const recentDecisions: AgentContext["recentDecisions"] = [];
-  const logKeys = await env.FARMER_FRED_KV.list({ prefix: "log:" });
-  for (const key of logKeys.keys.slice(0, 5)) {
-    const entry = await env.FARMER_FRED_KV.get(key.name, "json") as LogEntry;
-    if (entry) {
+  const checkKeys = await env.FARMER_FRED_KV.list({ prefix: "daily-check:" });
+  // daily-check keys are lexicographic by date, take last 5 (newest)
+  const recentCheckKeys = checkKeys.keys.slice(-5).reverse();
+  for (const key of recentCheckKeys) {
+    const entry = await env.FARMER_FRED_KV.get(key.name, "json") as {
+      decision?: string;
+      rationale?: string;
+      needsHumanApproval?: boolean;
+    } | null;
+    if (entry && entry.decision) {
       recentDecisions.push({
         id: key.name,
-        timestamp: entry.timestamp,
-        action: entry.title,
-        rationale: entry.description,
-        principles: entry.principles || [],
-        autonomous: entry.aiDecision,
+        timestamp: key.name.replace("daily-check:", ""),
+        action: typeof entry.decision === "string" ? entry.decision.slice(0, 200) : JSON.stringify(entry.decision).slice(0, 200),
+        rationale: typeof entry.rationale === "string" ? entry.rationale.slice(0, 300) : "",
+        principles: [],
+        autonomous: !entry.needsHumanApproval,
         outcome: null
       });
     }
   }
 
+  // Also supplement with log entries if we have fewer than 5 decisions
+  if (recentDecisions.length < 5) {
+    const logKeys = await env.FARMER_FRED_KV.list({ prefix: "log:" });
+    const logSlice = logKeys.keys.slice(-(5 - recentDecisions.length)).reverse();
+    for (const key of logSlice) {
+      const entry = await env.FARMER_FRED_KV.get(key.name, "json") as LogEntry;
+      if (entry) {
+        recentDecisions.push({
+          id: key.name,
+          timestamp: entry.timestamp,
+          action: entry.title,
+          rationale: entry.description,
+          principles: entry.principles || [],
+          autonomous: entry.aiDecision,
+          outcome: null
+        });
+      }
+    }
+  }
+
+  // Load call learnings for daily check prompt
+  let callLearnings: string | undefined;
+  try {
+    callLearnings = await getCallLearningsPrompt(env) || undefined;
+  } catch {
+    // Non-critical: call learnings may not be available
+  }
+
   return {
     weather,
+    allWeather: allWeatherData,
     emails: emailSummaries,
     budget: {
       spent: budget.spent,
@@ -2165,7 +2686,8 @@ async function buildAgentContext(env: Env): Promise<AgentContext> {
       percentUsed: budget.spent / budget.allocated
     },
     pendingTasks,
-    recentDecisions
+    recentDecisions,
+    callLearnings,
   };
 }
 

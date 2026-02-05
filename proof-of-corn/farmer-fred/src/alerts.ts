@@ -1,11 +1,17 @@
 /**
  * PROACTIVE ALERTING
  *
- * Send alert emails to Seth on important events.
+ * Send alert emails to governance council on important events.
  * Rate-limited: max 1 per category per 6 hours.
  */
 
 import { Env } from "./types";
+
+// Governance council alert recipients
+const ALERT_RECIPIENTS = [
+  "sethgoldstein@gmail.com",
+  "joseph.nelson@roboflow.com",
+];
 
 export async function sendAlertToSeth(
   env: Env,
@@ -29,7 +35,7 @@ export async function sendAlertToSeth(
       },
       body: JSON.stringify({
         from: "Farmer Fred <fred@proofofcorn.com>",
-        to: "sethgoldstein@gmail.com",
+        to: ALERT_RECIPIENTS,
         subject: `[Fred Alert] ${subject}`,
         text: body
       })

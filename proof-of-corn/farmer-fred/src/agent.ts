@@ -9,10 +9,12 @@ import { SYSTEM_PROMPT, evaluateDecision } from "./constitution";
 
 export interface AgentContext {
   weather: WeatherData | null;
+  allWeather?: WeatherData[];
   emails: EmailSummary[];
   budget: BudgetStatus;
   pendingTasks: Task[];
   recentDecisions: Decision[];
+  callLearnings?: string;
 }
 
 export interface WeatherData {
@@ -187,14 +189,31 @@ Format for the website log - professional but readable.
   private buildDailyCheckPrompt(context: AgentContext): string {
     const today = new Date().toISOString().split("T")[0];
 
-    return `
+    let prompt = `
 ## Daily Check - ${today}
 
 You are performing your daily check routine. Review the current state and decide what actions to take.
 
-${this.formatContext(context)}
+${this.formatContext(context)}`;
 
-## Your Task
+    // Call learnings from phone conversations
+    if (context.callLearnings) {
+      prompt += `\n${context.callLearnings}\n`;
+    }
+
+    // Recent decision outputs for continuity
+    if (context.recentDecisions.length > 0) {
+      prompt += `\n### Your Recent Decisions — reference these for continuity\n`;
+      for (const d of context.recentDecisions.slice(0, 5)) {
+        prompt += `- ${d.timestamp}: ${d.action} (${d.autonomous ? "autonomous" : "approved"})\n`;
+        if (d.rationale) prompt += `  Rationale: ${d.rationale.slice(0, 150)}\n`;
+      }
+      prompt += "\n";
+    }
+
+    prompt += `## Your Task`;
+
+    return prompt + `
 1. Analyze the current state across all regions
 2. Identify any actions needed today
 3. For each action, determine if you can act autonomously or need approval
@@ -225,8 +244,14 @@ NEXT_STEPS:
   private formatContext(context: AgentContext): string {
     let ctx = "";
 
-    // Weather
-    if (context.weather) {
+    // Weather — all regions if available, otherwise single region
+    if (context.allWeather && context.allWeather.length > 0) {
+      ctx += `### Weather (All Regions)\n`;
+      for (const w of context.allWeather) {
+        ctx += `**${w.region}**: ${w.temperature}°F, ${w.conditions}. ${w.forecast} Planting viable: ${w.plantingViable ? "Yes" : "No"}\n`;
+      }
+      ctx += "\n";
+    } else if (context.weather) {
       ctx += `### Weather - ${context.weather.region}
 - Temperature: ${context.weather.temperature}°F
 - Conditions: ${context.weather.conditions}

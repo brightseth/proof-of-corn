@@ -44,8 +44,38 @@ export async function handleEmail(
   // Run security check
   const securityCheck = checkEmailSecurity({ from, subject, body: text });
 
-  // Categorize the email
-  const category = categorizeEmail(from, subject, text, securityCheck);
+  // Categorize the email — try Claude first, fall back to keywords
+  let category = categorizeEmailKeywords(from, subject, text, securityCheck);
+  try {
+    if (securityCheck.isSafe && env.ANTHROPIC_API_KEY) {
+      const aiCategory = await categorizeEmailWithClaude(env, from, subject, text);
+      if (aiCategory) category = aiCategory;
+    }
+  } catch (err) {
+    console.log(`[Email] Claude categorization failed, using keyword fallback: ${err}`);
+  }
+
+  // Track sender relationship
+  try {
+    const senderKey = `sender:${from.toLowerCase()}`;
+    const senderData = await env.FARMER_FRED_KV.get(senderKey, "json") as {
+      count: number;
+      lastSeen: string;
+      categories: string[];
+    } | null;
+
+    const updated = {
+      count: (senderData?.count || 0) + 1,
+      lastSeen: new Date().toISOString(),
+      firstSeen: senderData ? (senderData as any).firstSeen || senderData.lastSeen : new Date().toISOString(),
+      categories: [...new Set([...(senderData?.categories || []), category || "other"])],
+    };
+    await env.FARMER_FRED_KV.put(senderKey, JSON.stringify(updated), {
+      expirationTtl: 60 * 60 * 24 * 180, // 180 days
+    });
+  } catch {
+    // Non-critical: sender tracking failure
+  }
 
   const storedEmail: StoredEmail = {
     id: emailId,
@@ -103,10 +133,61 @@ export async function handleEmail(
 }
 
 /**
- * Categorize email using the unified category system
+ * Categorize email using Claude for smarter classification
+ */
+async function categorizeEmailWithClaude(
+  env: Env,
+  from: string,
+  subject: string,
+  text: string
+): Promise<StoredEmail["category"] | null> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 100,
+      messages: [{
+        role: "user",
+        content: `Classify this email to Farmer Fred (AI farm manager for Proof of Corn project).
+
+From: ${from}
+Subject: ${subject}
+Body: ${text.slice(0, 500)}
+
+Classify as exactly one of: lead, partnership, question, spam, other
+- lead: farmer, land owner, equipment supplier, someone with farming resources
+- partnership: vendor, platform, API, data provider, collaboration offer
+- question: general inquiry, community question, media request
+- spam: unsolicited marketing, scam, irrelevant
+- other: anything else
+
+Respond with ONLY the category word, nothing else.`,
+      }],
+    }),
+  });
+
+  if (!res.ok) return null;
+
+  const data = await res.json() as { content: Array<{ type: string; text?: string }> };
+  const result = data.content?.find(c => c.type === "text")?.text?.trim().toLowerCase();
+
+  const validCategories: StoredEmail["category"][] = ["lead", "partnership", "question", "spam", "other"];
+  if (result && validCategories.includes(result as StoredEmail["category"])) {
+    return result as StoredEmail["category"];
+  }
+  return null;
+}
+
+/**
+ * Categorize email using keywords (fallback)
  * Maps to: "lead" | "partnership" | "question" | "spam" | "other" | "suspicious"
  */
-function categorizeEmail(
+function categorizeEmailKeywords(
   from: string,
   subject: string,
   text: string,
