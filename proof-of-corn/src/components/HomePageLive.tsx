@@ -231,3 +231,24 @@ export function LiveStatus() {
     </div>
   );
 }
+
+export function PlantingCountdown() {
+  const [daysLeft, setDaysLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    const plantingStart = new Date('2026-04-11T00:00:00');
+    const now = new Date();
+    const diff = Math.ceil((plantingStart.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    setDaysLeft(diff);
+  }, []);
+
+  if (daysLeft === null) return null;
+
+  return (
+    <p className="mt-4 text-sm text-zinc-500">
+      {daysLeft > 0
+        ? `${daysLeft} days until Iowa planting window opens`
+        : 'Iowa planting window is open'}
+    </p>
+  );
+}

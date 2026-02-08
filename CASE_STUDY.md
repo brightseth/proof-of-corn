@@ -221,4 +221,4 @@ The corn didn't grow itself. But neither did Claude touch a single seed.
 
 ---
 
-*Project by Seth Goldstein, orchestrated by Claude Code (Opus 4.5)*
+*Project by Seth Goldstein, orchestrated by Claude Code (Opus 4.6)*

@@ -1968,6 +1968,15 @@ async function handleCommodities(env: Env, headers: Record<string, string>): Pro
 }
 
 async function handleEvaluatePartnerships(env: Env, headers: Record<string, string>): Promise<Response> {
+  // Return cached evaluation if less than 1 hour old
+  const cached = await env.FARMER_FRED_KV.get("partnerships:latest-evaluation", "json") as any;
+  if (cached && cached.timestamp) {
+    const age = Date.now() - new Date(cached.timestamp).getTime();
+    if (age < 60 * 60 * 1000) { // 1 hour
+      return json(cached, headers);
+    }
+  }
+
   // Evaluate current partnership leads against Fred's constitution
   const agent = new FarmerFredAgent(env.ANTHROPIC_API_KEY);
 

@@ -305,7 +305,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchAll();
-    const interval = setInterval(fetchAll, 60000);
+    const interval = setInterval(fetchAll, 300000); // 5 minutes
     return () => clearInterval(interval);
   }, []);
 

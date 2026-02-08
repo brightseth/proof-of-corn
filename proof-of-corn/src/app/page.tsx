@@ -3,7 +3,7 @@ import Link from "next/link";
 import FredWidget from "@/components/FredWidget";
 import FredMiniWidget from "@/components/FredMiniWidget";
 import { ContactFred } from "@/components/ContactFred";
-import { CountdownBanner, LiveStatus } from "@/components/HomePageLive";
+import { CountdownBanner, LiveStatus, PlantingCountdown } from "@/components/HomePageLive";
 
 export const metadata: Metadata = {
   title: "Proof of Corn",
@@ -60,6 +60,7 @@ export default function Home() {
               Read the full story →
             </Link>
           </div>
+          <PlantingCountdown />
         </div>
       </section>
 
@@ -219,12 +220,13 @@ export default function Home() {
           <div className="space-y-6">
             {[
               { date: "Jan 22, 2026", event: "Challenge accepted", status: "done" },
-              { date: "Jan-Feb", event: "Infrastructure setup, outreach", status: "active" },
-              { date: "Feb-Mar", event: "Land lease, operator contract", status: "pending" },
+              { date: "Jan 22-25", event: "Site launched, hit #1 HN, Fred goes autonomous", status: "done" },
+              { date: "Jan 26 - Feb 8", event: "44 partnerships evaluated, 3 top leads identified", status: "done" },
+              { date: "Feb-Mar", event: "Land partnership — finalizing with Nebraska, Purdue, Zimbabwe", status: "active" },
               { date: "March", event: "Sensors deployed", status: "pending" },
               { date: "Apr 11 - May 18", event: "Planting window", status: "pending" },
               { date: "May - Sep", event: "Growing season (AI managing)", status: "pending" },
-              { date: "July", event: "Harvest", status: "pending" },
+              { date: "Sep-Oct", event: "Harvest", status: "pending" },
               { date: "Aug 2, 2026", event: "🌽 Union Square Farmers Market debut", status: "goal" },
             ].map((item, i) => (
               <div key={i} className="flex gap-4">
@@ -297,7 +299,7 @@ export default function Home() {
             <a href="https://x.com/seth" className="text-zinc-700 hover:underline" target="_blank" rel="noopener noreferrer">@seth</a>,
             inspired by{" "}
             <a href="https://x.com/fredwilson" className="text-zinc-700 hover:underline" target="_blank" rel="noopener noreferrer">@fredwilson</a>,
-            orchestrated by Claude Code (Opus 4.5)
+            orchestrated by Claude Code (Opus 4.6)
           </p>
           <p>
             Want to help? Iowa land leads, ag expertise, vibe coders welcome:{" "}

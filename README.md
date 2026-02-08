@@ -24,7 +24,7 @@ The argument: AI can write code, but it can't affect the physical world. It can'
 
 This is not a simulation. This is not a metaphor.
 
-We are growing **actual corn** — from seed to harvest — with every management decision made by Claude Code (Opus 4.5). The AI aggregates sensor data, weather forecasts, and satellite imagery to coordinate human operators who execute the physical work.
+We are growing **actual corn** — from seed to harvest — with every management decision made by Claude Code (Opus 4.6). The AI aggregates sensor data, weather forecasts, and satellite imagery to coordinate human operators who execute the physical work.
 
 **The thesis**: AI doesn't need to drive a tractor. It needs to orchestrate the systems and people who do.
 
@@ -74,7 +74,7 @@ We are growing **actual corn** — from seed to harvest — with every managemen
 
 | Component | Purpose |
 |-----------|---------|
-| **Claude Code (Opus 4.5)** | Decision engine — makes all farming decisions |
+| **Claude Code (Opus 4.6)** | Decision engine — makes all farming decisions |
 | **ThingsBoard** | IoT platform for real-time sensor data |
 | **OpenWeatherMap** | Weather forecasts for planting/irrigation decisions |
 | **Leaf Agriculture** | Satellite imagery (NDVI) for crop health |
@@ -156,7 +156,7 @@ It started with a conversation between two friends walking through San Francisco
 
 - **[@seth](https://x.com/seth)** — Human collaborator
 - **[@fredwilson](https://x.com/fredwilson)** — The challenge
-- **Claude Code (Opus 4.5)** — AI orchestrator
+- **Claude Code (Opus 4.6)** — AI orchestrator
 
 ---
 
