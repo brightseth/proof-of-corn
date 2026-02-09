@@ -1657,6 +1657,59 @@ Respond in JSON:
   return json(result, headers);
 }
 
+<<<<<<< Updated upstream
+=======
+async function handleTweet(request: Request, env: Env, headers: Record<string, string>): Promise<Response> {
+  // Verify admin auth
+  const authHeader = request.headers.get("Authorization") || "";
+  const token = authHeader.replace("Bearer ", "");
+  if (token !== env.ADMIN_PASSWORD) {
+    return json({ error: "Unauthorized" }, headers, 401);
+  }
+
+  if (!env.X_API_KEY || !env.X_API_SECRET || !env.X_ACCESS_TOKEN || !env.X_ACCESS_TOKEN_SECRET) {
+    return json({ error: "X API credentials not configured. Add secrets: X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET" }, headers, 500);
+  }
+
+  try {
+    const { postTweet, composeFarmUpdate } = await import("./twitter");
+    const body = await request.json() as { text?: string; auto?: boolean };
+
+    let tweetText = body.text;
+
+    // Auto-compose from current state if no text provided
+    if (!tweetText || body.auto) {
+      const weatherRes = await fetchAllRegionsWeather(env.OPENWEATHER_API_KEY);
+      const taskKeys = await env.FARMER_FRED_KV.list({ prefix: "task:" });
+      const daysToPlanting = Math.max(0, Math.ceil((new Date("2026-04-11").getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+
+      tweetText = composeFarmUpdate({
+        weather: weatherRes,
+        partnerships: taskKeys.keys.length,
+        daysToPlanting,
+      });
+    }
+
+    const result = await postTweet(tweetText, {
+      X_API_KEY: env.X_API_KEY,
+      X_API_SECRET: env.X_API_SECRET,
+      X_ACCESS_TOKEN: env.X_ACCESS_TOKEN,
+      X_ACCESS_TOKEN_SECRET: env.X_ACCESS_TOKEN_SECRET,
+    });
+
+    if (result.success) {
+      // Log the tweet
+      const logEntry = createLogEntry("agent", "Tweet Posted", `Fred tweeted: ${tweetText}\n\n${result.tweetUrl || ""}`);
+      await env.FARMER_FRED_KV.put(`log:${Date.now()}-tweet`, JSON.stringify(logEntry), { expirationTtl: 60 * 60 * 24 * 90 });
+    }
+
+    return json(result, headers);
+  } catch (e) {
+    return json({ error: String(e) }, headers, 500);
+  }
+}
+
+>>>>>>> Stashed changes
 async function handleOutreachTargets(env: Env, headers: Record<string, string>): Promise<Response> {
   const targetKeys = await env.FARMER_FRED_KV.list({ prefix: "outreach-target:" });
   const targets: OutreachTarget[] = [];
