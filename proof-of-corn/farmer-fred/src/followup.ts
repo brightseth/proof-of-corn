@@ -21,12 +21,25 @@ interface FollowUpRecord {
  * Schedule a follow-up if no reply within N days.
  * Leads: 5 days, Partnerships/Others: 7 days.
  */
+// Block bounce/system addresses from getting follow-ups
+const BLOCKED_PATTERNS = [
+  /@bounce\./i, /@send\./i, /^0[0-9a-f]{10,}/i,
+  /noreply@/i, /no-reply@/i, /mailer-daemon@/i, /postmaster@/i,
+  /fred@proofofcorn\.com/i,
+];
+
 export async function scheduleFollowUp(
   env: Env,
   contact: string,
   category: string | undefined,
   subject: string
 ): Promise<void> {
+  // Don't schedule follow-ups to system/bounce addresses
+  if (!contact || BLOCKED_PATTERNS.some(p => p.test(contact))) {
+    console.log(`[FollowUp] Skipping invalid address: ${contact}`);
+    return;
+  }
+
   const key = `followup:${contact.toLowerCase()}`;
   const existing = await env.FARMER_FRED_KV.get(key, "json") as FollowUpRecord | null;
 

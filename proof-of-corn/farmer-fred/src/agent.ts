@@ -194,11 +194,46 @@ You are performing your daily check routine. Review the current state and decide
 
 ${this.formatContext(context)}
 
+<<<<<<< Updated upstream
 ## Your Task
 1. Analyze the current state across all regions
 2. Identify any actions needed today
 3. For each action, determine if you can act autonomously or need approval
 4. Provide your decisions with clear rationale
+=======
+    // Call learnings from phone conversations
+    if (context.callLearnings) {
+      prompt += `\n${context.callLearnings}\n`;
+    }
+
+    // Recent decision outputs for continuity
+    if (context.recentDecisions.length > 0) {
+      prompt += `\n### Your Recent Decisions — reference these for continuity\n`;
+      for (const d of context.recentDecisions.slice(0, 5)) {
+        prompt += `- ${d.timestamp}: ${d.action} (${d.autonomous ? "autonomous" : "approved"})\n`;
+        if (d.rationale) prompt += `  Rationale: ${d.rationale.slice(0, 150)}\n`;
+      }
+      prompt += "\n";
+    }
+
+    prompt += `## CRITICAL PATH — Read This First
+
+**The ONLY thing that matters right now is securing Iowa land for April planting.**
+
+- PRIMARY LEAD: Joe Nelson (Nelson Family Farms, Humboldt County, Iowa). He has land, he's on the governance council, and he's engaged.
+- DO NOT re-evaluate partnerships if nothing has changed since last check.
+- DO NOT send cold outreach to South Texas or Argentina — Iowa is the path.
+- DO NOT create tasks for things that are already in progress.
+- If you have nothing new to act on, say so. "No new information, no new actions needed" is a valid decision.
+- Only recommend actions that ADVANCE the Iowa planting timeline.
+
+## Your Task`;
+
+    return prompt + `
+1. What changed since the last check? If nothing, say "no changes" and stop.
+2. Are there any NEW actions needed today? Only list actions that advance the critical path.
+3. For each action, determine if you can act autonomously or need approval.
+>>>>>>> Stashed changes
 
 Respond in this format:
 
