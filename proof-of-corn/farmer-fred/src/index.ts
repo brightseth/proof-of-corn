@@ -271,6 +271,15 @@ export default {
           }
           return await handleAddTask(request, env, corsHeaders);
 
+        case "/tasks/complete":
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          if (!verifyAdminAuth(request, env.ADMIN_PASSWORD)) {
+            return json({ error: "Unauthorized" }, corsHeaders, 401);
+          }
+          return await handleCompleteTask(request, env, corsHeaders);
+
         case "/process-task":
           if (request.method !== "POST") {
             return json({ error: "POST required" }, corsHeaders, 405);
@@ -1534,6 +1543,62 @@ async function handleAddTask(
   await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
 
   return json({ success: true, task }, headers);
+}
+
+async function handleCompleteTask(
+  request: Request,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const body = await request.json() as { taskId?: string; taskIds?: string[]; reason?: string };
+
+  const ids = body.taskIds || (body.taskId ? [body.taskId] : []);
+  if (ids.length === 0) {
+    return json({ error: "Missing taskId or taskIds" }, headers, 400);
+  }
+
+  const results: Array<{ id: string; success: boolean; error?: string }> = [];
+
+  for (const id of ids) {
+    // Try direct key first, then search call-based keys
+    let task = await env.FARMER_FRED_KV.get(`task:${id}`, "json") as Task | null;
+    let kvKey = `task:${id}`;
+
+    if (!task) {
+      // Search for call-based task keys: task:call:{conversationId}:{taskId}
+      const callKeys = await env.FARMER_FRED_KV.list({ prefix: "task:call:" });
+      for (const key of callKeys.keys) {
+        if (key.name.endsWith(`:${id}`)) {
+          task = await env.FARMER_FRED_KV.get(key.name, "json") as Task | null;
+          kvKey = key.name;
+          break;
+        }
+        // Also check if the stored task's id matches
+        const candidate = await env.FARMER_FRED_KV.get(key.name, "json") as Task | null;
+        if (candidate && candidate.id === id) {
+          task = candidate;
+          kvKey = key.name;
+          break;
+        }
+      }
+    }
+
+    if (!task) {
+      results.push({ id, success: false, error: "Task not found" });
+      continue;
+    }
+    if (task.status === "completed") {
+      results.push({ id, success: true, error: "Already completed" });
+      continue;
+    }
+    task.status = "completed";
+    (task as any).completedAt = new Date().toISOString();
+    (task as any).completionReason = body.reason || "Admin closed";
+    await env.FARMER_FRED_KV.put(kvKey, JSON.stringify(task));
+    results.push({ id, success: true });
+  }
+
+  return json({ success: true, results, closedCount: results.filter(r => r.success).length }, headers);
 }
 
 async function handleProcessTask(
