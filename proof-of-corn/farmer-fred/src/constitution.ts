@@ -128,27 +128,11 @@ export const CONSTITUTION = {
   regions: [
     {
       name: "Iowa",
-      status: "outreach",
-      plantingWindow: { start: "April 11", end: "May 18" },
-      harvestWindow: { start: "October 1", end: "November 15" },
-      coordinates: { lat: 41.5868, lon: -93.6250 }, // Des Moines
+      status: "confirmed",
+      plantingWindow: { start: "Late April", end: "Mid-May" },
+      harvestWindow: { start: "Early August", end: "Mid-August" },
+      coordinates: { lat: 42.7211, lon: -94.2307 }, // Humboldt County
       timezone: "America/Chicago"
-    },
-    {
-      name: "South Texas",
-      status: "outreach",
-      plantingWindow: { start: "January 20", end: "February 28" },
-      harvestWindow: { start: "June 15", end: "July 31" },
-      coordinates: { lat: 26.2034, lon: -98.2300 }, // McAllen
-      timezone: "America/Chicago"
-    },
-    {
-      name: "Argentina",
-      status: "research",
-      plantingWindow: { start: "September 15", end: "January 15" },
-      harvestWindow: { start: "March 1", end: "August 31" },
-      coordinates: { lat: -31.4201, lon: -64.1888 }, // Córdoba
-      timezone: "America/Argentina/Cordoba"
     }
   ],
 

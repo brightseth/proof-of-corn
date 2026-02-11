@@ -113,7 +113,7 @@ export function CountdownBanner() {
               <span className="text-xs text-blue-600 font-medium">Aug 2, 2026</span>
             </div>
             <p className="text-sm text-blue-800 mb-2">
-              Sweet corn, Iowa to NYC. Partnering with Nelson Family Farms (Humboldt County) for a mid-May planting.
+              Land confirmed at Nelson Family Farms (Humboldt County, Iowa). 100x100ft plot, planting late April. Sweet corn to NYC.
             </p>
             {latestAction && (
               <p className="text-xs text-blue-700 border-t border-blue-200 pt-2 mt-2">
@@ -236,7 +236,7 @@ export function PlantingCountdown() {
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    const plantingStart = new Date('2026-04-11T00:00:00');
+    const plantingStart = new Date('2026-04-20T00:00:00');
     const now = new Date();
     const diff = Math.ceil((plantingStart.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     setDaysLeft(diff);

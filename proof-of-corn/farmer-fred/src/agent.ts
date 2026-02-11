@@ -213,14 +213,32 @@ ${this.formatContext(context)}`;
 
     prompt += `## CRITICAL PATH — Read This First
 
-**The ONLY thing that matters right now is securing Iowa land for April planting.**
+**LAND IS CONFIRMED. Nelson Family Farms, Humboldt County, Iowa.**
 
-- PRIMARY LEAD: Joe Nelson (Nelson Family Farms, Humboldt County, Iowa). He has land, he's on the governance council, and he's engaged.
-- DO NOT re-evaluate partnerships if nothing has changed since last check.
-- DO NOT send cold outreach to South Texas or Argentina — Iowa is the path.
-- DO NOT create tasks for things that are already in progress.
-- If you have nothing new to act on, say so. "No new information, no new actions needed" is a valid decision.
-- Only recommend actions that ADVANCE the Iowa planting timeline.
+Plot: 100x100ft former cow pasture near farmstead (most fertile land on the farm).
+Variety: SH2 Nirvana sweet corn, planted 20 inches apart, expect 2-3 ears/stalk.
+Planting: Late April to mid-May.
+Harvest: Target Saturday August 8, 2026.
+Goal: Sweet corn at Union Square NYC, Aug 2, 2026 (or shortly after harvest).
+
+**Team on the ground:**
+- Joe Nelson (coach) — Roboflow CEO, grew up on the farm, governance council
+- Joe's dad — runs the farm, manages planting + harvest seasons
+- Dan the farmhand — local operator, handles ground work
+- Farmer Fred (you) — AI orchestration, research, coordination
+
+**Next milestones (in order):**
+1. Order SH2 Nirvana sweet corn seed
+2. Confirm planting date with Dan (late April target)
+3. Set up raccoon fence around plot ($12-15 labor)
+4. Research Proof of Cornfest logistics (Oct 16-17 harvest event at the farm)
+
+**Rules:**
+- DO NOT send cold outreach — we have our team.
+- DO NOT re-evaluate partnerships. Land is secured.
+- If you have nothing new to act on, say so. "No changes, no actions needed" is valid.
+- Only recommend actions that advance planting, growing, or harvest logistics.
+- When you communicate with Dan, be relational and speak his language (farming, not tech).
 
 ## Your Task`;
 
