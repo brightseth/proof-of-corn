@@ -1,9 +1,14 @@
 /**
  * FOLLOW-UP SYSTEM
  *
- * Track outbound emails and create follow-up tasks
- * when contacts don't reply within N days.
- * Max 2 follow-ups per contact.
+ * Track outbound emails and create follow-up draft tasks
+ * when contacts don't reply within 14 days.
+ *
+ * Rules:
+ * - Max 1 follow-up per contact (not 2 — respect their silence)
+ * - 14 day wait (not 2-4 days — give people space)
+ * - Follow-ups go to draft queue, not auto-send
+ * - Follow-up must add value (project update), not just "checking in"
  */
 
 import { Env } from "./types";
@@ -17,10 +22,6 @@ interface FollowUpRecord {
   attempts: number;
 }
 
-/**
- * Schedule a follow-up if no reply within N days.
- * Leads: 5 days, Partnerships/Others: 7 days.
- */
 // Block bounce/system addresses from getting follow-ups
 const BLOCKED_PATTERNS = [
   /@bounce\./i, /@send\./i, /^0[0-9a-f]{10,}/i,
@@ -28,6 +29,10 @@ const BLOCKED_PATTERNS = [
   /fred@proofofcorn\.com/i,
 ];
 
+/**
+ * Schedule a follow-up if no reply within 14 days.
+ * Only schedules if we haven't already followed up with this contact.
+ */
 export async function scheduleFollowUp(
   env: Env,
   contact: string,
@@ -43,12 +48,12 @@ export async function scheduleFollowUp(
   const key = `followup:${contact.toLowerCase()}`;
   const existing = await env.FARMER_FRED_KV.get(key, "json") as FollowUpRecord | null;
 
-  // Max 2 follow-ups per contact
-  if (existing && existing.attempts >= 2) return;
+  // Max 1 follow-up per contact — if we already followed up, stop
+  if (existing && existing.attempts >= 1) return;
 
-  const days = (category === "lead") ? 2 : 4;
+  // 14 days for everyone — give people space
   const followUpDate = new Date();
-  followUpDate.setDate(followUpDate.getDate() + days);
+  followUpDate.setDate(followUpDate.getDate() + 14);
 
   const record: FollowUpRecord = {
     contact,
@@ -65,7 +70,8 @@ export async function scheduleFollowUp(
 }
 
 /**
- * Check for overdue follow-ups and create tasks.
+ * Check for overdue follow-ups and create DRAFT tasks (not auto-send).
+ * Follow-ups require human review before sending.
  */
 export async function checkOverdueFollowUps(env: Env): Promise<void> {
   const keys = await env.FARMER_FRED_KV.list({ prefix: "followup:" });
@@ -79,11 +85,11 @@ export async function checkOverdueFollowUps(env: Env): Promise<void> {
       const task = {
         id: `${Date.now()}-fu-${Math.random().toString(36).slice(2, 6)}`,
         type: "follow_up" as const,
-        priority: record.category === "lead" ? "high" as const : "medium" as const,
+        priority: "medium" as const,
         title: `Follow up with ${record.contact}`,
-        description: `No reply received since ${record.sentAt}. Original subject: "${record.subject}". Attempt ${record.attempts + 1} of 2. Send a gentle reminder.`,
+        description: `No reply since ${record.sentAt}. Original subject: "${record.subject}". This is the only follow-up — if they don't reply, we move on. Share a project update, don't just "check in."`,
         createdAt: new Date().toISOString(),
-        status: "pending" as const,
+        status: "draft" as const, // Draft — needs human approval
         assignedTo: "fred" as const
       };
       await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task), {
@@ -91,7 +97,7 @@ export async function checkOverdueFollowUps(env: Env): Promise<void> {
       });
 
       await env.FARMER_FRED_KV.delete(key.name);
-      console.log(`[FollowUp] Created follow-up task for ${record.contact}`);
+      console.log(`[FollowUp] Created follow-up DRAFT for ${record.contact}`);
     }
   }
 }

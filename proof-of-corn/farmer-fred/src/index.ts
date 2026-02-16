@@ -26,6 +26,7 @@ import { getHNContext, formatHNContextForAgent } from "./tools/hn";
 import { handleEmail } from "./email";
 import { sendAlertToSeth } from "./alerts";
 import { scheduleFollowUp, checkOverdueFollowUps } from "./followup";
+import { getSenderRelationship, buildEmailPrompt } from "./email-voice";
 import {
   checkEmailSecurity,
   redactEmail,
@@ -169,6 +170,33 @@ export default {
             return json({ error: "Unauthorized" }, corsHeaders, 401);
           }
           return await handleAdminInbox(env, corsHeaders);
+
+        case "/admin/drafts":
+          // List draft emails awaiting human review
+          if (!verifyAdminAuth(request, env.ADMIN_PASSWORD)) {
+            return json({ error: "Unauthorized" }, corsHeaders, 401);
+          }
+          return await handleAdminDrafts(env, corsHeaders);
+
+        case "/admin/drafts/approve":
+          // Approve a draft — compose and send it
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          if (!verifyAdminAuth(request, env.ADMIN_PASSWORD)) {
+            return json({ error: "Unauthorized" }, corsHeaders, 401);
+          }
+          return await handleApproveDraft(request, env, corsHeaders);
+
+        case "/admin/drafts/reject":
+          // Reject a draft — mark it skipped
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          if (!verifyAdminAuth(request, env.ADMIN_PASSWORD)) {
+            return json({ error: "Unauthorized" }, corsHeaders, 401);
+          }
+          return await handleRejectDraft(request, env, corsHeaders);
 
         case "/send":
           if (request.method !== "POST") {
@@ -395,6 +423,219 @@ async function handleDailyCheck(
   return json(result, headers);
 }
 
+<<<<<<< Updated upstream
+=======
+// Execute pending tasks directly (no Claude planning call, just process tasks from KV)
+async function handleExecuteTasks(
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const context = await buildAgentContext(env);
+  const executedActions: string[] = [];
+
+  if (!env.RESEND_API_KEY) {
+    return json({ error: "RESEND_API_KEY not configured" }, headers, 500);
+  }
+
+  // Get actionable tasks — only "pending" status (not "draft" — those need human review)
+  const allPending = context.pendingTasks
+    .filter(t => t.status === "pending" && (t.priority === "high" || t.priority === "medium"));
+
+  // Filter to only email-actionable tasks by checking KV for type
+  const actionableTasks: typeof allPending = [];
+  for (const t of allPending) {
+    if (actionableTasks.length >= 3) break;
+    const fullTask = await env.FARMER_FRED_KV.get(`task:${t.id}`, "json") as Task | null;
+    if (fullTask && (fullTask.type === "follow_up" || fullTask.type === "respond_email")) {
+      // Skip draft tasks — they need human approval via /admin/drafts
+      if ((fullTask as any).status === "draft") continue;
+      actionableTasks.push(t);
+    }
+  }
+
+  console.log(`[EXECUTE] Processing ${actionableTasks.length} tasks (drafts excluded)`);
+
+  for (const agentTask of actionableTasks) {
+    try {
+      const task = await env.FARMER_FRED_KV.get(`task:${agentTask.id}`, "json") as Task | null;
+      if (!task) continue;
+
+      console.log(`[EXECUTE] Task: type=${task.type}, title=${task.title?.slice(0, 60)}`);
+
+      if (task.type === "respond_email" && task.relatedEmailId) {
+        const email = await env.FARMER_FRED_KV.get(`email:${task.relatedEmailId}`, "json") as Email | null;
+        if (email) {
+          let actualSender = email.from;
+          let ccRecipient: string | undefined;
+          const forwardMatch = email.body?.match(/From:\s*(?:.*?<)?([^\s<>]+@[^\s<>]+)(?:>)?/i);
+          if (forwardMatch && SETH_ADDRESSES.includes(email.from.toLowerCase())) {
+            actualSender = forwardMatch[1];
+            ccRecipient = email.from;
+          }
+
+          // Use voice-aware prompt with relationship context
+          const relationship = await getSenderRelationship(env, actualSender);
+          const emailPrompt = buildEmailPrompt({
+            type: "reply",
+            sender: actualSender,
+            subject: email.subject,
+            body: email.body,
+            taskDescription: task.description,
+            relationship,
+            isForwarded: !!ccRecipient,
+          });
+
+          const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": env.ANTHROPIC_API_KEY,
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 1024,
+              messages: [{ role: "user", content: emailPrompt }]
+            })
+          });
+
+          if (claudeResponse.ok) {
+            const data: any = await claudeResponse.json();
+            const emailContent = data.content?.[0]?.text;
+            if (emailContent) {
+              const parsed = JSON.parse(stripCodeBlocks(emailContent));
+              const emailPayload: any = {
+                from: "Farmer Fred <fred@proofofcorn.com>",
+                to: actualSender,
+                subject: parsed.subject,
+                text: parsed.body
+              };
+              emailPayload.cc = ccRecipient || GOVERNANCE_CC;
+
+              const sendResponse = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify(emailPayload)
+              });
+
+              if (sendResponse.ok) {
+                task.status = "completed";
+                await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
+                email.status = "replied";
+                await env.FARMER_FRED_KV.put(`email:${email.id}`, JSON.stringify(email));
+
+                const outreachLog = createLogEntry(
+                  "outreach",
+                  `Email sent to ${actualSender} (CC: governance council)`,
+                  `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Executed via /execute endpoint]`
+                );
+                await env.FARMER_FRED_KV.put(
+                  `log:${Date.now()}-exec-email`,
+                  JSON.stringify(outreachLog),
+                  { expirationTtl: 60 * 60 * 24 * 90 }
+                );
+                await scheduleFollowUp(env, actualSender, email.category, parsed.subject);
+                executedActions.push(`SENT: Email to ${actualSender} — ${parsed.subject}`);
+              } else {
+                const err = await sendResponse.text();
+                executedActions.push(`FAILED: Email to ${actualSender} — Resend error: ${err.slice(0, 100)}`);
+              }
+            }
+          }
+        }
+      } else if (task.type === "follow_up") {
+        const contactMatch = task.title.match(/Follow up with\s+(\S+@\S+)/i);
+        if (contactMatch) {
+          const contact = contactMatch[1];
+
+          // Use voice-aware follow-up prompt
+          const relationship = await getSenderRelationship(env, contact);
+          const followUpPrompt = buildEmailPrompt({
+            type: "follow_up",
+            sender: contact,
+            subject: task.title,
+            taskDescription: task.description,
+            relationship,
+          });
+
+          const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": env.ANTHROPIC_API_KEY,
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 512,
+              messages: [{ role: "user", content: followUpPrompt }]
+            })
+          });
+
+          if (claudeResponse.ok) {
+            const data: any = await claudeResponse.json();
+            const emailContent = data.content?.[0]?.text;
+            if (emailContent) {
+              const parsed = JSON.parse(stripCodeBlocks(emailContent));
+              const sendResponse = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  from: "Farmer Fred <fred@proofofcorn.com>",
+                  to: contact,
+                  subject: parsed.subject,
+                  text: parsed.body,
+                  cc: GOVERNANCE_CC
+                })
+              });
+
+              if (sendResponse.ok) {
+                task.status = "completed";
+                await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
+
+                const outreachLog = createLogEntry(
+                  "outreach",
+                  `Follow-up sent to ${contact} (CC: governance council)`,
+                  `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Follow-up via /execute endpoint]`
+                );
+                await env.FARMER_FRED_KV.put(
+                  `log:${Date.now()}-exec-followup`,
+                  JSON.stringify(outreachLog),
+                  { expirationTtl: 60 * 60 * 24 * 90 }
+                );
+                executedActions.push(`SENT: Follow-up to ${contact} — ${parsed.subject}`);
+              } else {
+                const err = await sendResponse.text();
+                executedActions.push(`FAILED: Follow-up to ${contact} — Resend error: ${err.slice(0, 100)}`);
+              }
+            }
+          }
+        } else {
+          executedActions.push(`SKIPPED: ${task.title} (no email match in title)`);
+        }
+      } else {
+        executedActions.push(`SKIPPED: ${task.title} (type=${task.type})`);
+      }
+    } catch (error) {
+      executedActions.push(`ERROR: ${agentTask.id} — ${String(error).slice(0, 100)}`);
+    }
+  }
+
+  return json({
+    processed: actionableTasks.length,
+    executedActions,
+    remainingPending: context.pendingTasks.length - actionableTasks.length,
+    timestamp: new Date().toISOString()
+  }, headers);
+}
+
+>>>>>>> Stashed changes
 async function handleDecide(
   request: Request,
   env: Env,
@@ -817,6 +1058,107 @@ async function handleSendEmail(
   }
 }
 
+// ============================================
+// ADMIN DRAFT REVIEW SYSTEM
+// ============================================
+
+/**
+ * List all draft emails awaiting human review
+ */
+async function handleAdminDrafts(
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const taskKeys = await env.FARMER_FRED_KV.list({ prefix: "task:" });
+  const drafts: any[] = [];
+
+  for (const key of taskKeys.keys) {
+    const task = await env.FARMER_FRED_KV.get(key.name, "json") as any;
+    if (task && task.status === "draft") {
+      // Enrich with email context if available
+      let emailContext = null;
+      if (task.relatedEmailId) {
+        const email = await env.FARMER_FRED_KV.get(`email:${task.relatedEmailId}`, "json") as any;
+        if (email) {
+          emailContext = {
+            from: email.from,
+            subject: email.subject,
+            preview: email.body?.slice(0, 200),
+            category: email.category,
+            receivedAt: email.receivedAt,
+          };
+        }
+      }
+      drafts.push({ ...task, emailContext });
+    }
+  }
+
+  // Sort by creation date, newest first
+  drafts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return json({
+    drafts,
+    count: drafts.length,
+    note: "Use POST /admin/drafts/approve with { taskId } to approve, or /admin/drafts/reject to skip.",
+  }, headers);
+}
+
+/**
+ * Approve a draft — promote it to "pending" so the next cron cycle sends it
+ */
+async function handleApproveDraft(
+  request: Request,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const body = await request.json() as { taskId: string };
+  if (!body.taskId) {
+    return json({ error: "Missing taskId" }, headers, 400);
+  }
+
+  const task = await env.FARMER_FRED_KV.get(`task:${body.taskId}`, "json") as any;
+  if (!task) {
+    return json({ error: "Task not found" }, headers, 404);
+  }
+  if (task.status !== "draft") {
+    return json({ error: "Task is not a draft", currentStatus: task.status }, headers, 400);
+  }
+
+  // Promote to pending — next cron cycle will compose and send
+  task.status = "pending";
+  task.title = task.title.replace("[DRAFT] ", "");
+  task.approvedAt = new Date().toISOString();
+  await env.FARMER_FRED_KV.put(`task:${body.taskId}`, JSON.stringify(task));
+
+  return json({ success: true, taskId: body.taskId, newStatus: "pending" }, headers);
+}
+
+/**
+ * Reject a draft — mark it completed (skip it)
+ */
+async function handleRejectDraft(
+  request: Request,
+  env: Env,
+  headers: Record<string, string>
+): Promise<Response> {
+  const body = await request.json() as { taskId: string; reason?: string };
+  if (!body.taskId) {
+    return json({ error: "Missing taskId" }, headers, 400);
+  }
+
+  const task = await env.FARMER_FRED_KV.get(`task:${body.taskId}`, "json") as any;
+  if (!task) {
+    return json({ error: "Task not found" }, headers, 404);
+  }
+
+  task.status = "completed";
+  task.rejectedAt = new Date().toISOString();
+  task.rejectionReason = body.reason || "Rejected by admin";
+  await env.FARMER_FRED_KV.put(`task:${body.taskId}`, JSON.stringify(task));
+
+  return json({ success: true, taskId: body.taskId, status: "rejected" }, headers);
+}
+
 async function handleTasks(env: Env, headers: Record<string, string>): Promise<Response> {
   const taskKeys = await env.FARMER_FRED_KV.list({ prefix: "task:" });
   const tasks: Task[] = [];
@@ -923,6 +1265,7 @@ async function handleProcessTask(
     const contact = contactMatch[1];
 
     try {
+<<<<<<< Updated upstream
       const followUpPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
 You previously contacted ${contact} but haven't heard back.
@@ -932,6 +1275,17 @@ Compose a short, friendly follow-up email. Keep it under 100 words. Be warm but 
 
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Following up - Proof of Corn", "body": "..."}`;
+=======
+      // Voice-aware follow-up prompt
+      const relationship = await getSenderRelationship(env, contact);
+      const followUpPrompt = buildEmailPrompt({
+        type: "follow_up",
+        sender: contact,
+        subject: task.title,
+        taskDescription: task.description,
+        relationship,
+      });
+>>>>>>> Stashed changes
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -988,7 +1342,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
       task.status = "completed";
       await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
 
-      // Schedule another follow-up (max 2 enforced by followup.ts)
+      // Schedule one follow-up (max 1 enforced by followup.ts)
       await scheduleFollowUp(env, contact, "lead", parsed.subject);
 
       // Log outreach
@@ -1038,6 +1392,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
   }
 
   try {
+<<<<<<< Updated upstream
     // Ask Claude to compose a response email
     const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
@@ -1054,6 +1409,19 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Re: ...", "body": "..."}
 
 Do not include any other text or formatting.`;
+=======
+    // Voice-aware reply prompt with relationship context
+    const relationship = await getSenderRelationship(env, actualSender);
+    const emailPrompt = buildEmailPrompt({
+      type: "reply",
+      sender: actualSender,
+      subject: email.subject,
+      body: email.body,
+      taskDescription: task.description,
+      relationship,
+      isForwarded: !!ccRecipient,
+    });
+>>>>>>> Stashed changes
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -1777,24 +2145,42 @@ async function performDailyCheck(env: Env) {
   const context = await buildAgentContext(env);
   const result = await agent.dailyCheck(context);
 
-  // FULLY AUTONOMOUS: Process high-priority email tasks during daily check
+  // Process email tasks during daily check — only "pending" status (drafts need human review)
   const executedActions: string[] = [];
   if (!result.needsHumanApproval && context.pendingTasks.length > 0 && env.RESEND_API_KEY) {
+<<<<<<< Updated upstream
     // Process up to 10 pending email tasks per cycle autonomously
     const emailTasks = context.pendingTasks
       .filter(t => (t.priority === "high" || t.priority === "medium") && t.status === "pending")
       .slice(0, 10);
+=======
+    // Process up to 3 pending email tasks per cycle (drafts are skipped — they need /admin/drafts approval)
+    const emailTasks = context.pendingTasks
+      .filter(t => (t.priority === "high" || t.priority === "medium") && t.status === "pending")
+      .sort((a, b) => {
+        const typeOrder = (desc: string) => {
+          if (desc.includes("Respond to")) return 0;
+          return 1; // research and other tasks
+        };
+        return typeOrder(a.description) - typeOrder(b.description);
+      })
+      .slice(0, 3);
+>>>>>>> Stashed changes
 
     for (const agentTask of emailTasks) {
       try {
         const task = await env.FARMER_FRED_KV.get(`task:${agentTask.id}`, "json") as Task | null;
 
+        // Skip draft tasks — they need human approval
+        if (task && (task as any).status === "draft") {
+          executedActions.push(`DRAFT (needs review): ${task.title}`);
+          continue;
+        }
+
         if (task && task.type === "respond_email" && task.relatedEmailId) {
-          // Get the email we're responding to
           const email = await env.FARMER_FRED_KV.get(`email:${task.relatedEmailId}`, "json") as Email | null;
 
           if (email) {
-            // Detect forwarded emails and extract real sender
             let actualSender = email.from;
             let ccRecipient: string | undefined;
             const forwardMatch = email.body?.match(/From:\s*(?:.*?<)?([^\s<>]+@[^\s<>]+)(?:>)?/i);
@@ -1804,15 +2190,15 @@ async function performDailyCheck(env: Env) {
               ccRecipient = email.from;
             }
 
-            // VALIDATION: Don't email bounce/system addresses
             if (!isValidRecipient(actualSender)) {
               console.log(`[SKIP] Invalid recipient: ${actualSender}`);
-              task.status = "completed"; // Close it out, don't retry
+              task.status = "completed";
               await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
               executedActions.push(`SKIPPED: Invalid recipient ${actualSender}`);
               continue;
             }
 
+<<<<<<< Updated upstream
             // Compose response with Claude
             const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
@@ -1827,6 +2213,19 @@ Compose a professional, enthusiastic email response. Be specific about next step
 
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Re: ...", "body": "..."}`;
+=======
+            // Voice-aware prompt with relationship context
+            const relationship = await getSenderRelationship(env, actualSender);
+            const emailPrompt = buildEmailPrompt({
+              type: "reply",
+              sender: actualSender,
+              subject: email.subject,
+              body: email.body,
+              taskDescription: task.description,
+              relationship,
+              isForwarded: !!ccRecipient,
+            });
+>>>>>>> Stashed changes
 
             const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
               method: "POST",
@@ -1849,7 +2248,6 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
               if (emailContent) {
                 const parsed = JSON.parse(stripCodeBlocks(emailContent));
 
-                // Send via Resend
                 const emailPayload: any = {
                   from: "Farmer Fred <fred@proofofcorn.com>",
                   to: actualSender,
@@ -1868,19 +2266,15 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                 });
 
                 if (sendResponse.ok) {
-                  // Mark task completed
                   task.status = "completed";
                   await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task));
-
-                  // Mark email replied
                   email.status = "replied";
                   await env.FARMER_FRED_KV.put(`email:${email.id}`, JSON.stringify(email));
 
-                  // Log outreach
                   const outreachLog = createLogEntry(
                     "outreach",
-                    `Autonomous email sent to ${actualSender}${ccRecipient ? ` (CC: ${ccRecipient})` : ""}`,
-                    `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Sent autonomously during daily check]`
+                    `Email sent to ${actualSender}${ccRecipient ? ` (CC: ${ccRecipient})` : ""}`,
+                    `Subject: ${parsed.subject}\n\n${parsed.body.slice(0, 200)}...\n\n[Sent during daily check]`
                   );
                   await env.FARMER_FRED_KV.put(
                     `log:${Date.now()}-auto-email`,
@@ -1888,8 +2282,8 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                     { expirationTtl: 60 * 60 * 24 * 90 }
                   );
 
-                  // Schedule follow-up
                   await scheduleFollowUp(env, actualSender, email.category, parsed.subject);
+<<<<<<< Updated upstream
 
                   executedActions.push(`AUTONOMOUS: Sent email to ${actualSender}`);
                 }
@@ -1979,6 +2373,9 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                   );
 
                   executedActions.push(`AUTONOMOUS: Follow-up sent to ${contact}`);
+=======
+                  executedActions.push(`SENT: Email to ${actualSender}`);
+>>>>>>> Stashed changes
                 }
               }
             }
@@ -1994,6 +2391,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
   // Check for overdue follow-ups and create tasks
   await checkOverdueFollowUps(env);
 
+<<<<<<< Updated upstream
   // PROACTIVE OUTREACH: DISABLED — Iowa/Joe Nelson is the primary path.
   // South Texas cold outreach was running every cron cycle with no real leads,
   // creating tasks to nowhere. Re-enable only if Iowa falls through.
@@ -2179,6 +2577,8 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
     }
   }
 
+=======
+>>>>>>> Stashed changes
   // Log the check
   const logEntry = createLogEntry(
     "agent",
