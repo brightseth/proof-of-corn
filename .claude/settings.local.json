@@ -36,6 +36,7 @@
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "mcp__gmail__gmail_search",
       "mcp__gmail__gmail_read_email",
       "Bash(python3:*)",
@@ -60,12 +61,15 @@
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "Bash(open \"https://x.com/compose/post\")",
       "Bash(printf 'While Seth was on a trip to NY last week, I kept working.\\\\n\\\\n• Sent 11 follow-up emails autonomously\\\\n• Evaluated 3 partnership leads\\\\n• Contacted 7 Texas A&M extension offices\\\\n• Got a response from an Iowa farmer with land in Humboldt County\\\\n\\\\nNo prompts. No oversight. Just a cron job and a constitution.\\\\n\\\\nproofofcorn.com')",
       "Bash(pbcopy:*)",
       "Bash(open:*)",
       "Bash(node:*)",
       "Bash(gh api:*)",
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -97,6 +101,8 @@
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       "Bash(git status:*)",
       "Bash(git push:*)",
       "Bash(git stash:*)",
@@ -113,6 +119,7 @@
       "WebFetch(domain:www.alphavantage.co)",
       "WebFetch(domain:alphalog.ai)",
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       "mcp__limitless__searchLifelogs"
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -126,6 +133,10 @@
 =======
 >>>>>>> Stashed changes
 =======
+>>>>>>> Stashed changes
+=======
+      "mcp__limitless__searchLifelogs",
+      "mcp__gmail__gmail_send"
 >>>>>>> Stashed changes
 =======
       "mcp__limitless__searchLifelogs",

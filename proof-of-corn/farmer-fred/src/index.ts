@@ -1266,6 +1266,7 @@ async function handleProcessTask(
 
     try {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       const followUpPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
 You previously contacted ${contact} but haven't heard back.
@@ -1276,6 +1277,8 @@ Compose a short, friendly follow-up email. Keep it under 100 words. Be warm but 
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Following up - Proof of Corn", "body": "..."}`;
 =======
+=======
+>>>>>>> Stashed changes
       // Voice-aware follow-up prompt
       const relationship = await getSenderRelationship(env, contact);
       const followUpPrompt = buildEmailPrompt({
@@ -1285,6 +1288,9 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
         taskDescription: task.description,
         relationship,
       });
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1393,6 +1399,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 
   try {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     // Ask Claude to compose a response email
     const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
@@ -1410,6 +1417,8 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 
 Do not include any other text or formatting.`;
 =======
+=======
+>>>>>>> Stashed changes
     // Voice-aware reply prompt with relationship context
     const relationship = await getSenderRelationship(env, actualSender);
     const emailPrompt = buildEmailPrompt({
@@ -1421,6 +1430,9 @@ Do not include any other text or formatting.`;
       relationship,
       isForwarded: !!ccRecipient,
     });
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -2145,6 +2157,7 @@ async function performDailyCheck(env: Env) {
   const context = await buildAgentContext(env);
   const result = await agent.dailyCheck(context);
 
+<<<<<<< Updated upstream
   // Process email tasks during daily check — only "pending" status (drafts need human review)
   const executedActions: string[] = [];
   if (!result.needsHumanApproval && context.pendingTasks.length > 0 && env.RESEND_API_KEY) {
@@ -2154,6 +2167,20 @@ async function performDailyCheck(env: Env) {
       .filter(t => (t.priority === "high" || t.priority === "medium") && t.status === "pending")
       .slice(0, 10);
 =======
+=======
+  // Track API usage
+  const today = new Date().toISOString().split("T")[0];
+  const usageKey = `api-usage:${today}`;
+  const usage = await env.FARMER_FRED_KV.get(usageKey, "json") as { calls: number; totalMs: number } | null;
+  await env.FARMER_FRED_KV.put(usageKey, JSON.stringify({
+    calls: (usage?.calls || 0) + 1,
+    totalMs: (usage?.totalMs || 0) + apiCallMs,
+  }), { expirationTtl: 60 * 60 * 24 * 30 });
+
+  // Process email tasks during daily check — only "pending" status (drafts need human review)
+  const executedActions: string[] = [];
+  if (!result.needsHumanApproval && context.pendingTasks.length > 0 && env.RESEND_API_KEY) {
+>>>>>>> Stashed changes
     // Process up to 3 pending email tasks per cycle (drafts are skipped — they need /admin/drafts approval)
     const emailTasks = context.pendingTasks
       .filter(t => (t.priority === "high" || t.priority === "medium") && t.status === "pending")
@@ -2165,6 +2192,9 @@ async function performDailyCheck(env: Env) {
         return typeOrder(a.description) - typeOrder(b.description);
       })
       .slice(0, 3);
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
     for (const agentTask of emailTasks) {
@@ -2199,6 +2229,7 @@ async function performDailyCheck(env: Env) {
             }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             // Compose response with Claude
             const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
@@ -2214,6 +2245,8 @@ Compose a professional, enthusiastic email response. Be specific about next step
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Re: ...", "body": "..."}`;
 =======
+=======
+>>>>>>> Stashed changes
             // Voice-aware prompt with relationship context
             const relationship = await getSenderRelationship(env, actualSender);
             const emailPrompt = buildEmailPrompt({
@@ -2225,6 +2258,9 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
               relationship,
               isForwarded: !!ccRecipient,
             });
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
             const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
@@ -2283,6 +2319,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                   );
 
                   await scheduleFollowUp(env, actualSender, email.category, parsed.subject);
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 
                   executedActions.push(`AUTONOMOUS: Sent email to ${actualSender}`);
@@ -2376,6 +2413,9 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 =======
                   executedActions.push(`SENT: Email to ${actualSender}`);
 >>>>>>> Stashed changes
+=======
+                  executedActions.push(`SENT: Email to ${actualSender}`);
+>>>>>>> Stashed changes
                 }
               }
             }
@@ -2391,6 +2431,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
   // Check for overdue follow-ups and create tasks
   await checkOverdueFollowUps(env);
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
   // PROACTIVE OUTREACH: DISABLED — Iowa/Joe Nelson is the primary path.
   // South Texas cold outreach was running every cron cycle with no real leads,
@@ -2577,6 +2618,8 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
     }
   }
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
   // Log the check
