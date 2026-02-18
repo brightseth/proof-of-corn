@@ -1267,6 +1267,7 @@ async function handleProcessTask(
     try {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       const followUpPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
 You previously contacted ${contact} but haven't heard back.
@@ -1279,6 +1280,8 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
       // Voice-aware follow-up prompt
       const relationship = await getSenderRelationship(env, contact);
       const followUpPrompt = buildEmailPrompt({
@@ -1289,6 +1292,9 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
         relationship,
       });
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -1400,6 +1406,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
   try {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     // Ask Claude to compose a response email
     const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
@@ -1419,6 +1426,8 @@ Do not include any other text or formatting.`;
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     // Voice-aware reply prompt with relationship context
     const relationship = await getSenderRelationship(env, actualSender);
     const emailPrompt = buildEmailPrompt({
@@ -1431,6 +1440,9 @@ Do not include any other text or formatting.`;
       isForwarded: !!ccRecipient,
     });
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -2180,6 +2192,9 @@ async function performDailyCheck(env: Env) {
   // Process email tasks during daily check — only "pending" status (drafts need human review)
   const executedActions: string[] = [];
   if (!result.needsHumanApproval && context.pendingTasks.length > 0 && env.RESEND_API_KEY) {
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     // Process up to 3 pending email tasks per cycle (drafts are skipped — they need /admin/drafts approval)
     const emailTasks = context.pendingTasks
@@ -2193,6 +2208,9 @@ async function performDailyCheck(env: Env) {
       })
       .slice(0, 3);
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -2230,6 +2248,7 @@ async function performDailyCheck(env: Env) {
 
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             // Compose response with Claude
             const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
@@ -2247,6 +2266,8 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
             // Voice-aware prompt with relationship context
             const relationship = await getSenderRelationship(env, actualSender);
             const emailPrompt = buildEmailPrompt({
@@ -2259,6 +2280,9 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
               isForwarded: !!ccRecipient,
             });
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -2319,6 +2343,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                   );
 
                   await scheduleFollowUp(env, actualSender, email.category, parsed.subject);
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 
@@ -2416,6 +2441,9 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 =======
                   executedActions.push(`SENT: Email to ${actualSender}`);
 >>>>>>> Stashed changes
+=======
+                  executedActions.push(`SENT: Email to ${actualSender}`);
+>>>>>>> Stashed changes
                 }
               }
             }
@@ -2431,6 +2459,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
   // Check for overdue follow-ups and create tasks
   await checkOverdueFollowUps(env);
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
   // PROACTIVE OUTREACH: DISABLED — Iowa/Joe Nelson is the primary path.
@@ -2618,6 +2647,8 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
     }
   }
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
