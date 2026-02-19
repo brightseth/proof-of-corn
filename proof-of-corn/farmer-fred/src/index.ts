@@ -1268,6 +1268,7 @@ async function handleProcessTask(
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       const followUpPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
 You previously contacted ${contact} but haven't heard back.
@@ -1278,6 +1279,8 @@ Compose a short, friendly follow-up email. Keep it under 100 words. Be warm but 
 IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {"subject": "Following up - Proof of Corn", "body": "..."}`;
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -1293,6 +1296,9 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
       });
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -1407,6 +1413,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     // Ask Claude to compose a response email
     const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
@@ -1428,6 +1435,8 @@ Do not include any other text or formatting.`;
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     // Voice-aware reply prompt with relationship context
     const relationship = await getSenderRelationship(env, actualSender);
     const emailPrompt = buildEmailPrompt({
@@ -1441,6 +1450,9 @@ Do not include any other text or formatting.`;
     });
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -2193,6 +2205,9 @@ async function performDailyCheck(env: Env) {
   const executedActions: string[] = [];
   if (!result.needsHumanApproval && context.pendingTasks.length > 0 && env.RESEND_API_KEY) {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -2209,6 +2224,9 @@ async function performDailyCheck(env: Env) {
       .slice(0, 3);
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -2249,6 +2267,7 @@ async function performDailyCheck(env: Env) {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             // Compose response with Claude
             const emailPrompt = `You are Farmer Fred, the AI farm manager for Proof of Corn.
 
@@ -2268,6 +2287,8 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
             // Voice-aware prompt with relationship context
             const relationship = await getSenderRelationship(env, actualSender);
             const emailPrompt = buildEmailPrompt({
@@ -2281,6 +2302,9 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
             });
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -2343,6 +2367,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
                   );
 
                   await scheduleFollowUp(env, actualSender, email.category, parsed.subject);
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -2444,6 +2469,9 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
 =======
                   executedActions.push(`SENT: Email to ${actualSender}`);
 >>>>>>> Stashed changes
+=======
+                  executedActions.push(`SENT: Email to ${actualSender}`);
+>>>>>>> Stashed changes
                 }
               }
             }
@@ -2459,6 +2487,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
   // Check for overdue follow-ups and create tasks
   await checkOverdueFollowUps(env);
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -2647,6 +2676,8 @@ IMPORTANT: Respond ONLY with valid JSON in this exact format:
     }
   }
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
