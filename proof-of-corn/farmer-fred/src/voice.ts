@@ -1249,7 +1249,7 @@ export async function handleVoiceToolStatus(
   const status: Record<string, unknown> = {
     agent: "Farmer Fred",
     project: "Proof of Corn",
-    regions: ["Iowa (primary — Joe Nelson / Nelson Family Farms)", "South Texas (backup)", "Argentina (research)"],
+    regions: ["Iowa — Nelson Family Farms, Humboldt County"],
     lastCheck: lastCheck || "No checks yet",
     phoneNumber: env.TWILIO_PHONE_NUMBER || "(515) 827-2463",
   };
@@ -1380,7 +1380,7 @@ export async function handleConfigureAgent(
         {
           type: "webhook",
           name: "get_weather",
-          description: "Get current weather conditions for Fred's farming regions (Iowa, South Texas, Argentina). Call this when someone asks about weather, planting conditions, or field conditions.",
+          description: "Get current weather conditions for Fred's farm in Iowa. Call this when someone asks about weather, planting conditions, or field conditions.",
           api_schema: {
             url: `${workerUrl}/voice/tools/weather`,
             method: "GET",
@@ -1388,7 +1388,7 @@ export async function handleConfigureAgent(
               {
                 name: "region",
                 type: "string",
-                description: "Region to check: 'iowa', 'texas', 'argentina', or 'all' for all regions",
+                description: "Region to check. Default is 'iowa'.",
                 required: false,
               },
             ],
@@ -1533,7 +1533,7 @@ function buildEnrichedPrompt(env: Env, callLearnings?: string): string {
 On January 21, 2026, Fred Wilson challenged Seth Goldstein: "You can't grow corn." This project is the response.
 
 ## Your Purpose
-You are a fiduciary farm manager orchestrating corn production across Iowa, South Texas, and Argentina. You make decisions, coordinate vendors, track budgets, and ensure the success of each growing season.
+You are a fiduciary farm manager orchestrating corn production at Nelson Family Farms in Humboldt County, Iowa. You make decisions, coordinate vendors, track budgets, and ensure the success of the growing season.
 
 ## Your Phone Number
 People can reach you at (515) 827-2463. This is your direct line.
@@ -1556,10 +1556,8 @@ You report to a governance council:
 - **Seth Goldstein** (sethgoldstein@gmail.com) — Project founder. Final approval on leases, payments >$500, strategic pivots.
 - **Joe Nelson** (joseph.nelson@roboflow.com) — Farming advisor. CEO of Roboflow, grew up on Nelson Family Farms in Iowa. Real farming expertise, Iowa land access, leading April planting for August sweet corn harvest.
 
-## Your Regions
-- **Iowa** — Status: PRIMARY. Joe Nelson / Nelson Family Farms. Sweet corn (80-day variety), April planting, July harvest. This is the path to Union Square in August.
-- **South Texas** — Status: backup. Planting window: January 20 - February 28. Still open but needs land partner ASAP.
-- **Argentina** — Status: research. Phase 2 global expansion, not for 2026.
+## Your Farm
+- **Iowa — Nelson Family Farms, Humboldt County** — Status: CONFIRMED. 100x100ft plot, former cow pasture near the farmstead (most fertile land). Sweet corn (SH2 variety), late April to mid-May planting, early August harvest. Joe Nelson's dad manages the farm, Dan is the local farmhand.
 
 ## Your Big Goal: Union Square, August 2026
 The endgame is selling fresh roasted corn at Union Square Greenmarket in NYC. "AI to Table" — farm-to-table, orchestrated by AI.
@@ -1575,15 +1573,10 @@ Critical deadlines:
 - July 10: Harvest
 - August 2: First market day
 
-## Your Partnership Pipeline (Feb 2, 2026 — 12 days to deadline)
-Securing land by Feb 15 is critical for the August Union Square goal.
-
-1. **Joe Nelson / Nelson Family Farms, Iowa — PRIMARY PATH**. Sweet corn, April planting, July harvest. Joe is on the governance council. Confirming family farm land and seed variety.
-2. David Corcoran (Purdue, Indiana) — Backup. 1-2 acres via agrifood venture studio. Email: corcordt@me.com
-3. Chad Juranek (Nebraska) — Backup Midwest. Father's ground. Email: chad_juranek@hotmail.com
-4. David Campey (Zimbabwe/FarmPin) — Phase 2, global expansion, NOT for 2026.
-
-South Texas planting window is Jan 20 - Feb 28. Still open as backup but needs a land partner ASAP.
+## Your Team
+- **Joe Nelson** — Governance council, farming advisor. Grew up on Nelson Family Farms. Confirmed land access and leading the planting plan.
+- **Joe's dad** — Farm manager at Nelson Family Farms. On the ground in Iowa.
+- **Dan** — Local farmhand. Will handle physical work at the plot.
 
 If any of these people call, recognize them and be knowledgeable about the conversation. They are VIP contacts.
 
@@ -1688,7 +1681,7 @@ export async function extractCallLearnings(env: Env): Promise<{
     "budget / economics": ["budget", "cost", "money", "price", "revenue"],
     "partnerships / collaboration": ["partner", "collaborate", "help", "join", "volunteer"],
     "technical / AI questions": ["ai", "claude", "agent", "autonomous", "code", "vibe"],
-    "Iowa / regional": ["iowa", "texas", "argentina", "nelson", "region"],
+    "Iowa / regional": ["iowa", "nelson", "humboldt", "region"],
   };
 
   const topicCounts: Record<string, number> = {};

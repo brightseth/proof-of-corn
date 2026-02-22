@@ -8,7 +8,6 @@ export interface Env {
   RESEND_API_KEY: string;
   ADMIN_PASSWORD: string;
   FARMER_FRED_KV: KVNamespace;
-  FARMER_FRED_DB: D1Database;
   FARMER_FRED_STATE: DurableObjectNamespace;
   AGENT_NAME: string;
   AGENT_VERSION: string;

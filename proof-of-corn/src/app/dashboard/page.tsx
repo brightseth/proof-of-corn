@@ -116,51 +116,27 @@ interface RegionData {
 const REGIONS: RegionData[] = [
   {
     id: 'iowa',
-    name: 'Iowa',
+    name: 'Iowa — Nelson Family Farms',
     worldId: 'b1d3b624-e89a-4463-8af2-f8ee7f2f2e47',
     viewerUrl: 'https://marble.worldlabs.ai/world/b1d3b624-e89a-4463-8af2-f8ee7f2f2e47',
     panoramaUrl: 'https://assets.worldlabs.ai/b1d3b624-e89a-4463-8af2-f8ee7f2f2e47/panorama.jpg',
     thumbnailUrl: 'https://assets.worldlabs.ai/b1d3b624-e89a-4463-8af2-f8ee7f2f2e47/thumbnail.webp',
-    description: '5-acre field with sensor posts every 50ft, drip irrigation system, classic red barn and farmhouse on flat Midwest terrain.',
-    features: ['Sensor Grid (50ft spacing)', 'Drip Irrigation', 'Red Barn', 'Farmhouse'],
-    coordinates: { lat: 41.5868, lon: -93.6250 },
-  },
-  {
-    id: 'texas',
-    name: 'South Texas',
-    worldId: '2933f7ce-0303-43e2-ab4b-10c49736de7c',
-    viewerUrl: 'https://marble.worldlabs.ai/world/2933f7ce-0303-43e2-ab4b-10c49736de7c',
-    panoramaUrl: 'https://assets.worldlabs.ai/2933f7ce-0303-43e2-ab4b-10c49736de7c/panorama.jpg',
-    thumbnailUrl: 'https://assets.worldlabs.ai/2933f7ce-0303-43e2-ab4b-10c49736de7c/thumbnail.webp',
-    description: 'Rio Grande Valley with center pivot irrigation, mesquite trees dotting the landscape, Mexican border mountains in the distance.',
-    features: ['Center Pivot Irrigation', 'Mesquite Trees', 'Border Mountains', 'Valley Location'],
-    coordinates: { lat: 26.2034, lon: -98.2300 },
-  },
-  {
-    id: 'argentina',
-    name: 'Argentina',
-    worldId: 'ce24809e-7da0-4099-8f1c-7a50957d2421',
-    viewerUrl: 'https://marble.worldlabs.ai/world/ce24809e-7da0-4099-8f1c-7a50957d2421',
-    panoramaUrl: 'https://assets.worldlabs.ai/ce24809e-7da0-4099-8f1c-7a50957d2421/panorama.jpg',
-    thumbnailUrl: 'https://assets.worldlabs.ai/ce24809e-7da0-4099-8f1c-7a50957d2421/thumbnail.webp',
-    description: 'Buenos Aires Pampas with no-till farming practices, eucalyptus windbreaks, traditional estancia ranch buildings.',
-    features: ['No-Till Farming', 'Eucalyptus Windbreaks', 'Estancia Ranch', 'Pampas Plains'],
-    coordinates: { lat: -31.4201, lon: -64.1888 },
+    description: '100x100ft plot, former cow pasture near the farmstead — the most fertile land on the property. Humboldt County, Iowa.',
+    features: ['100x100ft Plot', 'Former Cow Pasture', 'Nelson Farmstead', 'Humboldt County'],
+    coordinates: { lat: 42.7208, lon: -94.2313 },
   },
 ];
 
 const budgetExpenses: BudgetExpense[] = [
   { item: "Domain (proofofcorn.com)", cost: 12.99, status: "paid", date: "Jan 22" },
-  { item: "IoT Sensor Kit", cost: 300, status: "planned", date: "Feb" },
-  { item: "Soil Testing", cost: 50, status: "planned", date: "Feb" },
-  { item: "Land Lease (5 acres)", cost: 1370, status: "pending", date: "Mar" },
-  { item: "Custom Operator", cost: 800, status: "pending", date: "Apr-Oct" },
+  { item: "Seed (SH2 Nirvana sweet corn)", cost: 50, status: "planned", date: "Mar" },
+  { item: "Soil Testing", cost: 50, status: "planned", date: "Mar" },
 ];
 
 const budgetRevenue = {
-  yield: 1000,
-  price: 4.0,
-  total: 4000,
+  yield: 200,
+  price: 5.0,
+  total: 1000,
 };
 
 interface ChangelogEntry {
@@ -241,7 +217,7 @@ const CHANGELOG: ChangelogEntry[] = [
     summary: 'Farmer Fred goes live. Constitution ratified. First domain purchased.',
     changes: [
       'Constitutional framework: 6 core principles, autonomy levels, escalation triggers',
-      'Weather monitoring across 3 regions (Iowa, South Texas, Argentina)',
+      'Weather monitoring for Iowa',
       'Soil temperature estimation and planting condition evaluation',
       'Budget tracking with revenue projections',
       'Cloudflare Worker deployment with KV storage and D1 database',
@@ -645,8 +621,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
           <div>
             <p className="text-3xl font-bold">{budgetRevenue.yield.toLocaleString()}</p>
-            <p className="text-sm text-zinc-500">bushels expected</p>
-            <p className="text-xs text-zinc-400 mt-1">200 bu/acre × 5 acres</p>
+            <p className="text-sm text-zinc-500">dozen ears expected</p>
+            <p className="text-xs text-zinc-400 mt-1">100x100ft sweet corn plot</p>
           </div>
           <div>
             <p className="text-3xl font-bold">${budgetRevenue.price.toFixed(2)}</p>
@@ -837,9 +813,8 @@ export default function DashboardPage() {
   const renderRegionsTab = () => {
     const region = REGIONS.find(r => r.id === selectedRegion) || REGIONS[0];
     const currentWeather = weather.find(w =>
-      w.region.toLowerCase().replace(' ', '-') === selectedRegion ||
-      (selectedRegion === 'texas' && w.region === 'South Texas')
-    );
+      w.region.toLowerCase().includes('iowa')
+    ) || weather[0];
 
     return (
       <div className="space-y-6">
@@ -916,16 +891,14 @@ export default function DashboardPage() {
             <div>
               <div className="font-bold text-amber-900 mb-2">Fred&apos;s Take</div>
               <p className="text-amber-800">
-                {selectedRegion === 'iowa' && "Iowa's the heartland for a reason. Flat terrain, rich soil, and generations of farming wisdom. Just need to wait out this winter freeze."}
-                {selectedRegion === 'texas' && "South Texas gives us an early start - planting window opens now. The Rio Grande Valley has water access and the growing season we need."}
-                {selectedRegion === 'argentina' && "Argentina's our hedge against US weather. When it's winter up north, the Pampas are in full growing season. Global thinking."}
+                {"Nelson Family Farms is the real deal. Humboldt County, Iowa — 100x100ft of former cow pasture, the most fertile land on the property. Joe's family has been farming here for generations. We plant late April, harvest early August."}
               </p>
             </div>
           </div>
         </div>
 
         <p className="text-sm text-zinc-500 text-center">
-          3D worlds generated with{' '}
+          3D world generated with{' '}
           <a href="https://worldlabs.ai" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">
             World Labs
           </a>

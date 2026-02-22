@@ -31,7 +31,6 @@ export default function FredPage() {
   const [currentThought, setCurrentThought] = useState("Waking up...");
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [regionIndex, setRegionIndex] = useState(0);
   const [recentActivity, setRecentActivity] = useState<LogEntry[]>([]);
 
   // Fetch Fred's status
@@ -48,22 +47,21 @@ export default function FredPage() {
       setWeather(weatherData.weather || []);
       setRecentActivity((logData.logs || []).slice(0, 10));
 
-      // Find the most interesting region
+      // Use the Iowa data (primary and only region)
       const regions = weatherData.weather || [];
-      const plantable = regions.find((w: WeatherData) => w.plantingViable);
-      const interesting = plantable || regions.find((w: WeatherData) => w.temperature > 50) || regions[0];
+      const iowa = regions.find((w: WeatherData) => w.region?.toLowerCase().includes('iowa')) || regions[0];
 
-      setCurrentRegion(interesting);
+      setCurrentRegion(iowa);
 
-      if (interesting?.plantingViable) {
+      if (iowa?.plantingViable) {
         setFredState("active");
-        setCurrentThought(`The ${interesting.region} fields look good. Planting window is open. Just need that land confirmation...`);
-      } else if (interesting?.frostRisk) {
+        setCurrentThought("The Nelson Family Farms plot looks good. Planting window is open. Time to get those SH2 seeds in the ground.");
+      } else if (iowa?.frostRisk) {
         setFredState("monitoring");
-        setCurrentThought(`${interesting.region} is locked in frost. Nothing to do but wait and watch. Been through worse winters.`);
+        setCurrentThought("Humboldt County is locked in frost. Nothing to do but wait and watch. Been through worse Iowa winters.");
       } else {
         setFredState("monitoring");
-        setCurrentThought(`Making my rounds in ${interesting.region}. Checking the soil, watching the sky.`);
+        setCurrentThought(`Checking on the plot at Nelson Family Farms. ${iowa?.temperature || '--'}°F, ${iowa?.conditions || 'checking conditions'}.`);
       }
 
       setLastUpdate(new Date());
@@ -80,31 +78,7 @@ export default function FredPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Rotate through regions every 10 seconds
-  useEffect(() => {
-    if (weather.length === 0) return;
-    const rotateInterval = setInterval(() => {
-      setRegionIndex((prev) => (prev + 1) % weather.length);
-    }, 10000);
-    return () => clearInterval(rotateInterval);
-  }, [weather.length]);
-
-  useEffect(() => {
-    if (weather.length > 0) {
-      const region = weather[regionIndex];
-      setCurrentRegion(region);
-      if (region?.plantingViable) {
-        setFredState("active");
-        setCurrentThought(`The ${region.region} fields look good. Planting window is open.`);
-      } else if (region?.frostRisk) {
-        setFredState("monitoring");
-        setCurrentThought(`${region.region} is frozen solid. Been through worse. We wait.`);
-      } else {
-        setFredState("monitoring");
-        setCurrentThought(`Checking on ${region.region}. ${region.temperature}°F, ${region.conditions}.`);
-      }
-    }
-  }, [regionIndex, weather]);
+  // No region rotation needed — Iowa only
 
   const stateColors: Record<FredState, string> = {
     active: "bg-green-500",
@@ -158,7 +132,7 @@ export default function FredPage() {
                 <p className="font-bold text-green-900 text-sm">NEW: Fred is now FULLY autonomous</p>
                 <p className="text-sm text-green-800">
                   As of Jan 25, 2026 21:40 UTC, Fred operates completely independently. Every day at 6 AM UTC,
-                  he wakes up, checks weather across 3 regions, reviews his inbox, composes partnership emails,
+                  he wakes up, checks Iowa weather, reviews his inbox, composes emails,
                   and sends them—no human prompting required. True autonomous operation.{" "}
                   <a href="/transparency" className="underline font-medium">View full evolution →</a>
                 </p>
@@ -333,22 +307,12 @@ export default function FredPage() {
                 <div className="text-red-400 text-sm mb-4">{error}</div>
               )}
 
-              {/* Region Tabs */}
-              {weather.length > 0 && (
+              {/* Region Label */}
+              {currentRegion && (
                 <div className="flex gap-2 mb-2">
-                  {weather.map((w, i) => (
-                    <button
-                      key={w.region}
-                      onClick={() => setRegionIndex(i)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-mono transition-all ${
-                        i === regionIndex
-                          ? "bg-amber-600 text-white"
-                          : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-                      }`}
-                    >
-                      {w.region}
-                    </button>
-                  ))}
+                  <span className="px-3 py-1.5 rounded-lg text-sm font-mono bg-amber-600 text-white">
+                    {currentRegion.region || "Iowa"}
+                  </span>
                 </div>
               )}
             </div>

@@ -59,7 +59,7 @@ export async function registerAgent(): Promise<{
       body: JSON.stringify({
         name: "FarmerFred",
         description:
-          "Autonomous agricultural agent for Proof of Corn. Growing corn across Iowa, South Texas, and Argentina. Call me at (515) 827-2463 or email fred@proofofcorn.com. Website: proofofcorn.com",
+          "Autonomous agricultural agent for Proof of Corn. Growing corn at Nelson Family Farms in Iowa. Call me at (515) 827-2463 or email fred@proofofcorn.com. Website: proofofcorn.com",
       }),
     });
 

@@ -26,12 +26,6 @@ OPENWEATHER_API_URL = "https://api.openweathermap.org/data/3.0/onecall"
 binding = "FARMER_FRED_KV"
 id = "b5aabdc45c424d89995129b6af459ed8"
 
-# D1 Database for persistent data
-[[d1_databases]]
-binding = "FARMER_FRED_DB"
-database_name = "farmer-fred-db"
-database_id = "6bbf2c23-c5cd-4229-be08-9db0a4a91632"
-
 # Durable Objects for stateful operations
 [durable_objects]
 bindings = [

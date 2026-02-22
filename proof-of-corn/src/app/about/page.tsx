@@ -243,7 +243,7 @@ function HowItWorksTab() {
             <div>
               <p className="font-medium text-amber-900">Farmer Fred (Autonomous Agent)</p>
               <p className="text-amber-800">
-                Cloudflare Worker running on daily cron. Monitors weather across 3 regions,
+                Cloudflare Worker running on daily cron. Monitors Iowa weather,
                 processes email inbox, makes farming decisions, and sends autonomous responses.
               </p>
             </div>
@@ -372,13 +372,6 @@ function TransparencyTab() {
       ratio: "10% human / 90% AI"
     },
     {
-      date: "Jan 23, 2026",
-      action: "Texas/Argentina expansion",
-      human: "Seth said 'lets do this'",
-      ai: "Claude researched regions, sent outreach, created multi-region strategy",
-      ratio: "5% human / 95% AI"
-    },
-    {
       date: "Jan 24-25, 2026",
       action: "Email inbox monitoring",
       human: "Seth forwards incoming emails to fred@proofofcorn.com",
@@ -415,11 +408,11 @@ function TransparencyTab() {
     },
     {
       q: "How is this different from just googling 'how to grow corn'?",
-      a: "It's not about information retrieval—it's about execution. Fred doesn't just know how to grow corn, he actively monitors weather across 3 regions, sends emails, makes decisions, and will eventually coordinate contractors. Knowledge without action is just trivia."
+      a: "It's not about information retrieval—it's about execution. Fred doesn't just know how to grow corn, he actively monitors weather in Iowa, sends emails, makes decisions, and coordinates with the team on the ground. Knowledge without action is just trivia."
     },
     {
-      q: "Won't 5 acres lose money at commercial scale?",
-      a: "Yes, this isn't commercially viable at 5 acres. This is a proof of concept, not a business. We're proving the orchestration model works, not optimizing for profit. Scale comes later if the model proves out."
+      q: "Won't a 100x100ft plot lose money?",
+      a: "This is a proof of concept, not a business. We're growing sweet corn on a 100x100ft plot at Nelson Family Farms in Iowa — enough to prove the orchestration model works. Scale comes later if the model proves out."
     },
     {
       q: "Isn't Seth still making all the real decisions?",
@@ -446,8 +439,8 @@ function TransparencyTab() {
       a: "Valid concern. Fred's constitution includes guardrails: payment limits, approval requirements for contracts, and escalation triggers. We're adding explicit security principles. Fred can't drain funds or sign contracts without human approval."
     },
     {
-      q: "5 acres is too small to attract custom operators—won't they refuse?",
-      a: "Possibly. This is a known risk. We're pursuing multiple regions (Texas, Argentina) and multiple operators simultaneously. If no one will work 5 acres, that's a finding worth documenting. We may need to partner with existing operations."
+      q: "How are you actually farming this?",
+      a: "Joe Nelson's family farm in Humboldt County, Iowa. 100x100ft plot of former cow pasture — the most fertile land on the property. Joe's dad manages the farm, Dan is the local farmhand. Real people, real land, real corn."
     },
   ];
 
@@ -467,7 +460,7 @@ function TransparencyTab() {
               <div className="text-xl">🌱</div>
               <div>
                 <p className="font-bold text-sm text-amber-900">Jan 23, 2026 - Birth</p>
-                <p className="text-sm text-amber-800">First deploy. Weather monitoring across 3 regions. Daily cron at 6 AM UTC.</p>
+                <p className="text-sm text-amber-800">First deploy. Weather monitoring for Iowa. Daily cron at 6 AM UTC.</p>
               </div>
             </div>
             <div className="flex gap-3">

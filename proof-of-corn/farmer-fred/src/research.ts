@@ -56,18 +56,9 @@ const FETCH_TIMEOUT_MS = 8000; // 8s fetch timeout (Workers have 30s wall clock)
 const RATE_LIMIT_WINDOW = 60 * 60; // 1 hour
 const RATE_LIMIT_MAX = 10;
 
-// State extension directories by domain
+// State extension directories by domain — Iowa only (land confirmed)
 const EXTENSION_DIRECTORIES: Record<string, { url: string; name: string }> = {
-  TX: { url: "https://agrilifeextension.tamu.edu/county-offices/", name: "Texas A&M AgriLife Extension" },
   IA: { url: "https://www.extension.iastate.edu/content/county-offices", name: "Iowa State University Extension" },
-  IL: { url: "https://extension.illinois.edu/global/county-offices", name: "University of Illinois Extension" },
-  IN: { url: "https://extension.purdue.edu/county-offices.html", name: "Purdue Extension" },
-  NE: { url: "https://extension.unl.edu/county-offices/", name: "University of Nebraska-Lincoln Extension" },
-  KS: { url: "https://www.ksre.k-state.edu/about/county-offices.html", name: "K-State Research and Extension" },
-  MN: { url: "https://extension.umn.edu/county-offices", name: "University of Minnesota Extension" },
-  MO: { url: "https://extension.missouri.edu/counties", name: "University of Missouri Extension" },
-  OH: { url: "https://extension.osu.edu/county-offices", name: "Ohio State University Extension" },
-  WI: { url: "https://counties.extension.wisc.edu/", name: "University of Wisconsin-Madison Extension" },
 };
 
 // State abbreviation lookup for common names
@@ -950,14 +941,11 @@ function extractState(text: string): string {
     }
   }
 
-  // Default: try to find "south texas" -> TX
-  if (text.includes("south texas") || text.includes("rio grande") || text.includes("corpus christi")) {
-    return "TX";
-  }
-  if (text.includes("iowa") || text.includes("des moines")) return "IA";
+  // Default to Iowa (Proof of Corn primary region)
+  if (text.includes("iowa") || text.includes("des moines") || text.includes("humboldt")) return "IA";
   if (text.includes("illinois") || text.includes("champaign")) return "IL";
 
-  return "TX"; // Default to Texas (Proof of Corn primary region)
+  return "IA"; // Default to Iowa
 }
 
 /**
@@ -991,10 +979,9 @@ function extractAcreage(text: string): { min: number; max: number } {
  * Extract region name from text.
  */
 function extractRegion(text: string): string {
-  // Known Proof of Corn regions
+  // Known Proof of Corn regions — Iowa confirmed
   const regions = [
-    "South Texas", "Rio Grande Valley", "Corpus Christi",
-    "Central Iowa", "Des Moines", "Ames",
+    "Central Iowa", "Des Moines", "Ames", "Humboldt County",
     "Central Illinois", "Champaign",
   ];
 
@@ -1011,7 +998,7 @@ function extractRegion(text: string): string {
     }
   }
 
-  return "South Texas"; // Default
+  return "Central Iowa"; // Default
 }
 
 /**
@@ -1019,10 +1006,8 @@ function extractRegion(text: string): string {
  */
 function getRegionCoordinates(region: string): { lat: number; lon: number } | null {
   const coords: Record<string, { lat: number; lon: number }> = {
-    "south texas": { lat: 26.2, lon: -98.23 },
-    "rio grande valley": { lat: 26.2, lon: -98.23 },
-    "corpus christi": { lat: 27.8, lon: -97.4 },
     "central iowa": { lat: 41.59, lon: -93.62 },
+    "humboldt county": { lat: 42.72, lon: -94.23 },
     "des moines": { lat: 41.59, lon: -93.62 },
     "ames": { lat: 42.03, lon: -93.47 },
     "central illinois": { lat: 40.12, lon: -88.24 },

@@ -188,7 +188,7 @@ function analyzeComment(text: string): {
   if (lowerText.includes("soil") || lowerText.includes("organic") || lowerText.includes("regenerat")) {
     topics.push("agriculture");
   }
-  if (lowerText.includes("iowa") || lowerText.includes("texas") || lowerText.includes("argentina")) {
+  if (lowerText.includes("iowa") || lowerText.includes("humboldt") || lowerText.includes("nelson")) {
     topics.push("regions");
   }
 
