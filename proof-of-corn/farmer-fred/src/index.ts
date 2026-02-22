@@ -38,7 +38,7 @@
  */
 
 import { FarmerFredAgent, AgentContext } from "./agent";
-import { CONSTITUTION, SYSTEM_PROMPT } from "./constitution";
+import { CONSTITUTION, SYSTEM_PROMPT, evaluateDecision } from "./constitution";
 import { fetchAllRegionsWeather, evaluatePlantingConditions } from "./tools/weather";
 import { createLogEntry, logDecision, logWeatherCheck, formatLogEntry, LogEntry } from "./tools/log";
 import { getHNContext, formatHNContextForAgent } from "./tools/hn";
@@ -359,8 +359,16 @@ export default {
           }
           return await handleTweet(request, env, corsHeaders);
 
-        case "/outreach-targets":
-          return await handleOutreachTargets(env, corsHeaders);
+        case "/purchase":
+          if (request.method !== "POST") {
+            return json({ error: "POST required" }, corsHeaders, 405);
+          }
+          return await handlePurchase(request, env, corsHeaders);
+
+        case "/economics":
+          return await handleEconomics(env, corsHeaders);
+
+        // /outreach-targets removed — no longer used
 
         // ============================================
         // VOICE CALL ROUTES
@@ -730,6 +738,14 @@ Write ONLY your reply text. No quotes.` }],
       } catch (moltError) {
         console.error("Moltbook heartbeat failed (non-critical):", moltError);
       }
+
+      // Weekly auto-tweet — Monday 12:00 UTC field report
+      try {
+        const tweetResult = await maybeAutoTweet(env);
+        console.log("Auto-tweet check:", tweetResult.reason);
+      } catch (tweetError) {
+        console.error("Auto-tweet failed (non-critical):", tweetError);
+      }
     } catch (error) {
       console.error("Cron job failed:", error);
     }
@@ -759,7 +775,9 @@ function getAgentInfo(env: Env) {
       check: "/check (POST)",
       decide: "/decide (POST)",
       constitution: "/constitution",
-      log: "/log"
+      log: "/log",
+      purchase: "/purchase (POST)",
+      economics: "/economics"
     }
   };
 }
@@ -1279,17 +1297,7 @@ interface Task {
   assignedTo: "fred" | "human";
 }
 
-interface OutreachTarget {
-  id: string;
-  name: string;
-  organization: string;
-  email: string;
-  region: string;
-  category: "extension_agent" | "usda" | "farm_bureau" | "marketplace" | "direct_farmer";
-  priority: number;
-  status: "pending" | "contacted" | "replied" | "declined";
-  contactedAt?: string;
-}
+// OutreachTarget interface removed — no longer used
 
 interface Learning {
   id: string;
@@ -2265,13 +2273,12 @@ async function extractLearningsFromEmail(email: Email, env: Env): Promise<Learni
   }
 
   // Regional farming insights
-  if (content.includes("nebraska") || content.includes("iowa") || content.includes("texas")) {
-    const region = content.includes("nebraska") ? "Nebraska" : content.includes("iowa") ? "Iowa" : "Texas";
+  if (content.includes("iowa") || content.includes("humboldt") || content.includes("nelson")) {
     learnings.push({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       source: "email",
       sourceId: email.id,
-      insight: `Regional insight from ${email.from} about ${region} farming`,
+      insight: `Regional insight from ${email.from} about Iowa farming`,
       category: "farming",
       confidence: "medium",
       createdAt: new Date().toISOString(),
@@ -2524,6 +2531,234 @@ Respond in JSON:
   return json(result, headers);
 }
 
+// ============================================
+// PURCHASE & ECONOMICS HANDLERS
+// ============================================
+
+async function handlePurchase(request: Request, env: Env, headers: Record<string, string>): Promise<Response> {
+  // Admin auth required
+  if (!verifyAdminAuth(request, env.ADMIN_PASSWORD)) {
+    return json({ error: "Unauthorized" }, headers, 401);
+  }
+
+  const body = await request.json() as { item: string; amount: number; category?: string; notes?: string };
+
+  if (!body.item || body.amount === undefined) {
+    return json({ error: "Missing required fields: item, amount" }, headers, 400);
+  }
+
+  if (body.amount <= 0) {
+    return json({ error: "Amount must be positive" }, headers, 400);
+  }
+
+  if (body.amount > CONSTITUTION.economics.paymentThreshold) {
+    return json({
+      error: `Amount $${body.amount} exceeds payment threshold ($${CONSTITUTION.economics.paymentThreshold}). Use /decide for large purchases.`,
+    }, headers, 400);
+  }
+
+  // Evaluate the purchase decision
+  const decision = evaluateDecision(`purchase ${body.item}`, body.amount);
+  const isMicro = body.amount < CONSTITUTION.economics.microPurchaseThreshold;
+
+  // Get current budget
+  const budgetData = await env.FARMER_FRED_KV.get("budget", "json") as {
+    spent: number;
+    allocated: number;
+  } | null;
+  const budget = budgetData || { spent: 12.99, allocated: 2500 };
+
+  const newSpent = budget.spent + body.amount;
+  const overrunPct = (newSpent - budget.allocated) / budget.allocated;
+
+  // Record the purchase
+  const purchaseId = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const purchase = {
+    id: purchaseId,
+    item: body.item,
+    amount: body.amount,
+    category: body.category || "supplies",
+    notes: body.notes || "",
+    isMicroPurchase: isMicro,
+    decision: {
+      autonomous: decision.canActAutonomously,
+      principles: decision.relevantPrinciples,
+    },
+    budgetBefore: budget.spent,
+    budgetAfter: newSpent,
+    timestamp: new Date().toISOString(),
+  };
+
+  await env.FARMER_FRED_KV.put(`purchase:${purchaseId}`, JSON.stringify(purchase), {
+    expirationTtl: 60 * 60 * 24 * 365,
+  });
+
+  // Update budget
+  await env.FARMER_FRED_KV.put("budget", JSON.stringify({
+    spent: newSpent,
+    allocated: budget.allocated,
+  }));
+
+  // Log the decision
+  const logEntry = createLogEntry(
+    "agent",
+    `Purchase: ${body.item} ($${body.amount.toFixed(2)})`,
+    `Category: ${body.category || "supplies"}\nMicro-purchase: ${isMicro}\nBudget: $${newSpent.toFixed(2)}/$${budget.allocated}\nPrinciples: ${decision.relevantPrinciples.join(", ") || "fiduciary"}`
+  );
+  await env.FARMER_FRED_KV.put(`log:${Date.now()}-purchase`, JSON.stringify(logEntry), {
+    expirationTtl: 60 * 60 * 24 * 90,
+  });
+
+  // Budget overrun alert
+  let alert = null;
+  if (overrunPct > 0) {
+    alert = `Budget overrun: ${(overrunPct * 100).toFixed(1)}% over allocated amount`;
+    if (overrunPct > CONSTITUTION.economics.budgetAlertThreshold) {
+      await sendAlertToSeth(env, "budget-overrun", "Budget overrun alert", `Spending $${newSpent.toFixed(2)} of $${budget.allocated} allocated (${(overrunPct * 100).toFixed(1)}% over).`);
+    }
+  }
+
+  // For micro-purchases: notify governance council AFTER the fact
+  if (isMicro && env.RESEND_API_KEY) {
+    try {
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Farmer Fred <fred@proofofcorn.com>",
+          to: GOVERNANCE_CC,
+          subject: `[Micro-Purchase] ${body.item} — $${body.amount.toFixed(2)}`,
+          text: `Heads up — I made a small purchase under my $100 autonomous threshold.\n\nItem: ${body.item}\nAmount: $${body.amount.toFixed(2)}\nCategory: ${body.category || "supplies"}\n${body.notes ? `Notes: ${body.notes}\n` : ""}\nBudget: $${newSpent.toFixed(2)} of $${budget.allocated} spent\n\nThis is a notification, not an approval request. My constitution allows micro-purchases under $${CONSTITUTION.economics.microPurchaseThreshold}.\n\n—Fred`,
+        }),
+      });
+    } catch (emailErr) {
+      console.error("[Purchase] Notification email failed:", emailErr);
+    }
+  }
+
+  return json({
+    success: true,
+    purchase,
+    budget: { spent: newSpent, allocated: budget.allocated, remaining: budget.allocated - newSpent },
+    alert,
+  }, headers);
+}
+
+async function handleEconomics(env: Env, headers: Record<string, string>): Promise<Response> {
+  // Public, no auth — full transparency per constitution
+
+  // Budget
+  const budgetData = await env.FARMER_FRED_KV.get("budget", "json") as {
+    spent: number;
+    allocated: number;
+  } | null;
+  const budget = budgetData || { spent: 12.99, allocated: 2500 };
+
+  // API usage last 30 days
+  const apiUsage: Record<string, { calls: number; totalMs: number }> = {};
+  let totalApiCalls = 0;
+  let totalApiMs = 0;
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const u = await env.FARMER_FRED_KV.get(`api-usage:${d}`, "json") as { calls: number; totalMs: number } | null;
+    if (u) {
+      apiUsage[d] = u;
+      totalApiCalls += u.calls;
+      totalApiMs += u.totalMs;
+    }
+  }
+
+  // Decision count from daily-check keys
+  const checkKeys = await env.FARMER_FRED_KV.list({ prefix: "daily-check:" });
+  const totalDecisions = checkKeys.keys.length;
+
+  // Purchase history
+  const purchaseKeys = await env.FARMER_FRED_KV.list({ prefix: "purchase:" });
+  const purchases: Array<{ item: string; amount: number; category: string; timestamp: string }> = [];
+  for (const key of purchaseKeys.keys) {
+    const p = await env.FARMER_FRED_KV.get(key.name, "json") as any;
+    if (p) purchases.push({ item: p.item, amount: p.amount, category: p.category, timestamp: p.timestamp });
+  }
+
+  // Cost per decision (~$0.015/API call)
+  const costPerCall = 0.015;
+  const totalApiCost = totalApiCalls * costPerCall;
+  const costPerDecision = totalDecisions > 0 ? totalApiCost / totalDecisions : 0;
+
+  // Burn rate
+  const activeDays = Object.keys(apiUsage).length || 1;
+  const dailyBurnRate = totalApiCost / activeDays;
+  const weeklyBurnRate = dailyBurnRate * 7;
+
+  // Days until budget exhausted (API costs only)
+  const remaining = budget.allocated - budget.spent;
+  const daysUntilExhausted = dailyBurnRate > 0 ? Math.floor(remaining / dailyBurnRate) : Infinity;
+
+  // Revenue projection
+  const projectedEars = 1200;
+  const pricePerEar = 0.75;
+  const grossRevenue = projectedEars * pricePerEar; // $900
+  const revenueSplit = {
+    agent: grossRevenue * CONSTITUTION.economics.revenueShare.agent,
+    operations: grossRevenue * CONSTITUTION.economics.revenueShare.operations,
+    foodBank: grossRevenue * CONSTITUTION.economics.revenueShare.foodBank,
+    reserve: grossRevenue * CONSTITUTION.economics.revenueShare.reserve,
+  };
+
+  // Days to harvest (break-even target)
+  const harvestDate = new Date("2026-08-08T00:00:00Z");
+  const daysToHarvest = Math.max(0, Math.ceil((harvestDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+
+  return json({
+    budget: {
+      allocated: budget.allocated,
+      spent: budget.spent,
+      remaining,
+      percentUsed: ((budget.spent / budget.allocated) * 100).toFixed(1) + "%",
+    },
+    apiCosts: {
+      totalCalls: totalApiCalls,
+      totalCostEstimate: `$${totalApiCost.toFixed(2)}`,
+      costPerDecision: `$${costPerDecision.toFixed(4)}`,
+      dailyBurnRate: `$${dailyBurnRate.toFixed(3)}`,
+      weeklyBurnRate: `$${weeklyBurnRate.toFixed(2)}`,
+      daysUntilExhausted: daysUntilExhausted === Infinity ? "N/A" : daysUntilExhausted,
+      activeDays,
+    },
+    decisions: {
+      total: totalDecisions,
+      costPerDecision: `$${costPerDecision.toFixed(4)}`,
+    },
+    purchases: {
+      history: purchases,
+      totalSpent: purchases.reduce((sum, p) => sum + p.amount, 0),
+      count: purchases.length,
+    },
+    revenue: {
+      projectedEars,
+      pricePerEar: `$${pricePerEar.toFixed(2)}`,
+      grossRevenue: `$${grossRevenue.toFixed(2)}`,
+      split: {
+        agent: `$${revenueSplit.agent.toFixed(2)} (${CONSTITUTION.economics.revenueShare.agent * 100}%)`,
+        operations: `$${revenueSplit.operations.toFixed(2)} (${CONSTITUTION.economics.revenueShare.operations * 100}%)`,
+        foodBank: `$${revenueSplit.foodBank.toFixed(2)} (${CONSTITUTION.economics.revenueShare.foodBank * 100}%)`,
+        reserve: `$${revenueSplit.reserve.toFixed(2)} (${CONSTITUTION.economics.revenueShare.reserve * 100}%)`,
+      },
+      daysToHarvest,
+      harvestDate: "2026-08-08",
+    },
+    constitution: {
+      microPurchaseThreshold: CONSTITUTION.economics.microPurchaseThreshold,
+      paymentThreshold: CONSTITUTION.economics.paymentThreshold,
+      budgetAlertThreshold: CONSTITUTION.economics.budgetAlertThreshold,
+    },
+    timestamp: new Date().toISOString(),
+  }, headers);
+}
+
 async function handleTweet(request: Request, env: Env, headers: Record<string, string>): Promise<Response> {
   // Verify admin auth
   const authHeader = request.headers.get("Authorization") || "";
@@ -2574,31 +2809,95 @@ async function handleTweet(request: Request, env: Env, headers: Record<string, s
   }
 }
 
-async function handleOutreachTargets(env: Env, headers: Record<string, string>): Promise<Response> {
-  const targetKeys = await env.FARMER_FRED_KV.list({ prefix: "outreach-target:" });
-  const targets: OutreachTarget[] = [];
+// handleOutreachTargets removed — no longer used
 
-  for (const key of targetKeys.keys) {
-    const target = await env.FARMER_FRED_KV.get(key.name, "json") as OutreachTarget | null;
-    if (target) targets.push(target);
+/**
+ * Autonomous weekly tweet — fires on Monday 12:00 UTC cron tick.
+ * Double-post prevention via KV timestamp + day/hour check.
+ */
+async function maybeAutoTweet(env: Env): Promise<{ posted: boolean; reason: string; tweetUrl?: string }> {
+  const now = new Date();
+
+  // Only fire on Monday at 12:00 UTC (6am CST)
+  if (now.getUTCDay() !== 1 || now.getUTCHours() !== 12) {
+    return { posted: false, reason: `Not Monday 12:00 UTC (day=${now.getUTCDay()}, hour=${now.getUTCHours()})` };
   }
 
-  targets.sort((a, b) => a.priority - b.priority);
+  // Check last auto-tweet timestamp — must be 7+ days since last
+  const lastAutoTweet = await env.FARMER_FRED_KV.get("auto-tweet:last");
+  if (lastAutoTweet) {
+    const daysSinceLast = (now.getTime() - new Date(lastAutoTweet).getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceLast < 7) {
+      return { posted: false, reason: `Last auto-tweet was ${daysSinceLast.toFixed(1)} days ago (need 7+)` };
+    }
+  }
 
-  const outreachKeys = await env.FARMER_FRED_KV.list({ prefix: "outreach:" });
+  // Check X API credentials
+  if (!env.X_API_KEY || !env.X_API_SECRET || !env.X_ACCESS_TOKEN || !env.X_ACCESS_TOKEN_SECRET) {
+    return { posted: false, reason: "X API credentials not configured" };
+  }
 
-  return json({
-    targets,
-    summary: {
-      total: targets.length,
-      pending: targets.filter(t => t.status === "pending").length,
-      contacted: targets.filter(t => t.status === "contacted").length,
-      replied: targets.filter(t => t.status === "replied").length,
-      declined: targets.filter(t => t.status === "declined").length,
-      activeThreads: outreachKeys.keys.length
-    },
-    timestamp: new Date().toISOString()
-  }, headers);
+  // Gather data for the tweet
+  const { postTweet, composeWeeklyReport } = await import("./twitter");
+
+  let weather: Array<{ region?: string; temp?: number; temperature?: number }> = [];
+  try {
+    weather = await fetchAllRegionsWeather(env.OPENWEATHER_API_KEY);
+  } catch {
+    // Weather failure is non-fatal
+  }
+
+  const budgetData = await env.FARMER_FRED_KV.get("budget", "json") as { spent: number; allocated: number } | null;
+  const budget = budgetData || { spent: 12.99, allocated: 2500 };
+
+  const daysToPlanting = Math.max(0, Math.ceil((new Date("2026-04-11").getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+
+  // Get latest decision for week highlight
+  const checkKeys = await env.FARMER_FRED_KV.list({ prefix: "daily-check:" });
+  const latestKey = checkKeys.keys[checkKeys.keys.length - 1];
+  let weekHighlight: string | undefined;
+  if (latestKey) {
+    const check = await env.FARMER_FRED_KV.get(latestKey.name, "json") as { decision?: string } | null;
+    if (check?.decision && typeof check.decision === "string") {
+      weekHighlight = check.decision.slice(0, 60);
+    }
+  }
+
+  const tweetText = composeWeeklyReport({
+    weather,
+    daysToPlanting,
+    budgetSpent: budget.spent,
+    budgetAllocated: budget.allocated,
+    weekHighlight,
+  });
+
+  const result = await postTweet(tweetText, {
+    X_API_KEY: env.X_API_KEY,
+    X_API_SECRET: env.X_API_SECRET,
+    X_ACCESS_TOKEN: env.X_ACCESS_TOKEN,
+    X_ACCESS_TOKEN_SECRET: env.X_ACCESS_TOKEN_SECRET,
+  });
+
+  if (result.success) {
+    // Save timestamp to KV
+    await env.FARMER_FRED_KV.put("auto-tweet:last", now.toISOString(), {
+      expirationTtl: 60 * 60 * 24 * 30,
+    });
+
+    // Log it
+    const logEntry = createLogEntry(
+      "agent",
+      "Weekly Auto-Tweet Posted",
+      `${tweetText}\n\n${result.tweetUrl || ""}`
+    );
+    await env.FARMER_FRED_KV.put(`log:${Date.now()}-auto-tweet`, JSON.stringify(logEntry), {
+      expirationTtl: 60 * 60 * 24 * 90,
+    });
+
+    return { posted: true, reason: "Weekly field report posted", tweetUrl: result.tweetUrl };
+  }
+
+  return { posted: false, reason: `Tweet failed: ${result.error}` };
 }
 
 // ============================================
@@ -2818,7 +3117,7 @@ async function performDailyCheck(env: Env) {
                   phone: contact.phone || "",
                   organization: contact.organization,
                   role: contact.role,
-                  region: task.description.toLowerCase().includes("texas") ? "South Texas" : "Iowa",
+                  region: "Iowa",
                   status: "identified",
                   discoveredAt: new Date().toISOString(),
                   source: "research-automation",
@@ -2860,7 +3159,7 @@ async function performDailyCheck(env: Env) {
 }
 
 async function buildAgentContext(env: Env): Promise<AgentContext> {
-  // Fetch weather — all 3 regions
+  // Fetch weather
   let weather = null;
   let allWeatherData: AgentContext["allWeather"] = undefined;
   try {

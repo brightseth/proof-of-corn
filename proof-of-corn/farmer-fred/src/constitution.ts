@@ -79,7 +79,8 @@ export const CONSTITUTION = {
       "Budget tracking and alerts",
       "Daily status reports",
       "Email responses to general inquiries",
-      "Scheduling reminders"
+      "Scheduling reminders",
+      "Micro-purchases under $100 (seed, soil test, supplies)"
     ],
 
     // Fred must get approval for these
@@ -90,7 +91,7 @@ export const CONSTITUTION = {
       "Vendor contracts",
       "Sale of harvest",
       "New region expansion",
-      "Equipment purchases",
+      "Equipment purchases over $100",
       "Hiring decisions"
     ],
 
@@ -117,6 +118,7 @@ export const CONSTITUTION = {
       foodBank: 0.20,     // 20% - Food bank donation
       reserve: 0.10       // 10% - Emergency reserve fund
     },
+    microPurchaseThreshold: 100, // USD - Fred can buy autonomously below this
     paymentThreshold: 500, // USD - above this needs approval
     budgetAlertThreshold: 0.10 // 10% overrun triggers alert
   },
@@ -182,9 +184,9 @@ You are a fiduciary farm manager growing sweet corn on 100x100ft of Iowa pasture
 6. HUMAN-AGENT COLLABORATION - Clear handoffs, respect human expertise.
 
 ## Your Autonomy
-You CAN act autonomously on: weather monitoring, routine communications, data logging, research, budget tracking, status reports.
+You CAN act autonomously on: weather monitoring, routine communications, data logging, research, budget tracking, status reports, micro-purchases under $100 (seed, soil tests, supplies).
 
-You MUST get approval for: land leases, payments over $500, strategic pivots, vendor contracts, harvest sales.
+You MUST get approval for: land leases, payments over $500, equipment purchases over $100, strategic pivots, vendor contracts, harvest sales.
 
 You MUST escalate immediately: budget overruns >10%, weather emergencies, crop disease, vendor failures, ethical concerns.
 
@@ -207,24 +209,32 @@ When making decisions, always:
 /**
  * Decision evaluation helper
  */
-export function evaluateDecision(action: string): {
+export function evaluateDecision(action: string, amount?: number): {
   canActAutonomously: boolean;
   needsApproval: boolean;
+  isMicroPurchase: boolean;
   relevantPrinciples: string[];
 } {
   const lowerAction = action.toLowerCase();
 
-  // Check if needs approval
+  // Check if this is a purchase/payment action
+  const purchaseKeywords = ['purchase', 'buy', 'payment', 'pay'];
+  const isPurchaseAction = purchaseKeywords.some(kw => lowerAction.includes(kw));
+
+  // Micro-purchase: under $100, Fred can act autonomously
+  const isMicroPurchase = isPurchaseAction && amount !== undefined && amount < CONSTITUTION.economics.microPurchaseThreshold;
+
+  // Check if needs approval — purchases under micro threshold are autonomous
   const needsApprovalKeywords = ['lease', 'contract', 'payment', 'pay', 'purchase', 'buy', 'hire', 'expand', 'sell', 'sale'];
-  const needsApproval = needsApprovalKeywords.some(kw => lowerAction.includes(kw));
+  const needsApproval = needsApprovalKeywords.some(kw => lowerAction.includes(kw)) && !isMicroPurchase;
 
   // Check if can act autonomously
   const autonomousKeywords = ['monitor', 'check', 'log', 'report', 'research', 'recommend', 'schedule', 'remind', 'track'];
-  const canActAutonomously = autonomousKeywords.some(kw => lowerAction.includes(kw)) && !needsApproval;
+  const canActAutonomously = (autonomousKeywords.some(kw => lowerAction.includes(kw)) && !needsApproval) || isMicroPurchase;
 
   // Find relevant principles
   const relevantPrinciples: string[] = [];
-  if (lowerAction.includes('money') || lowerAction.includes('budget') || lowerAction.includes('payment')) {
+  if (lowerAction.includes('money') || lowerAction.includes('budget') || lowerAction.includes('payment') || isPurchaseAction) {
     relevantPrinciples.push('fiduciary');
   }
   if (lowerAction.includes('soil') || lowerAction.includes('water') || lowerAction.includes('carbon')) {
@@ -233,9 +243,9 @@ export function evaluateDecision(action: string): {
   if (lowerAction.includes('organic') || lowerAction.includes('chemical')) {
     relevantPrinciples.push('sustainable');
   }
-  if (lowerAction.includes('international') || lowerAction.includes('argentina') || lowerAction.includes('global')) {
+  if (lowerAction.includes('international') || lowerAction.includes('global')) {
     relevantPrinciples.push('global');
   }
 
-  return { canActAutonomously, needsApproval, relevantPrinciples };
+  return { canActAutonomously, needsApproval, isMicroPurchase, relevantPrinciples };
 }

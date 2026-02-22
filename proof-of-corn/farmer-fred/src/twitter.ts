@@ -420,7 +420,7 @@ function formatTemp(temp: number): string {
 
 /**
  * Pick a weather summary from the weather data array.
- * Returns a concise string like "Iowa at 23°F, South Texas at 78°F"
+ * Returns a concise string like "Iowa 23°F"
  */
 function summarizeWeather(weather: Array<{
   region?: string;
@@ -441,9 +441,7 @@ function summarizeWeather(weather: Array<{
         .replace("Des Moines", "Iowa")
         .replace("Ames", "Iowa")
         .replace("Nelson Family Farms", "Iowa")
-        .replace("Corpus Christi", "S. Texas")
-        .replace("South Texas", "S. Texas")
-        .replace("Buenos Aires", "Argentina");
+        .replace("Humboldt County", "Iowa");
       parts.push(`${shortName} ${formatTemp(temp)}`);
     }
   }
@@ -544,6 +542,86 @@ export function composeFarmUpdate(data: {
   if (tweet.length > 280) {
     // Last resort: opener + planting countdown + URL
     tweet = `${opener} ${daysToPlanting > 0 ? `${daysToPlanting} days to plant.` : ""} ${suffix}`.trim();
+  }
+
+  return tweet;
+}
+
+/**
+ * Compose a weekly field report tweet for autonomous Monday posting.
+ *
+ * Format: "Week N field report. Iowa XX°F. N days to planting. proofofcorn.com"
+ * Stays under 280 characters. Uses same truncation strategy as composeFarmUpdate().
+ */
+export function composeWeeklyReport(data: {
+  weather: Array<{
+    region?: string;
+    name?: string;
+    temp?: number;
+    temperature?: number;
+    description?: string;
+  }>;
+  daysToPlanting: number;
+  budgetSpent: number;
+  budgetAllocated: number;
+  weekHighlight?: string;
+}): string {
+  const { weather, daysToPlanting, budgetSpent, budgetAllocated, weekHighlight } = data;
+
+  // Calculate week number since project start (Jan 21, 2026)
+  const projectStart = new Date("2026-01-21T00:00:00Z");
+  const now = new Date();
+  const weekNumber = Math.max(1, Math.ceil((now.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+
+  const opener = `Week ${weekNumber} field report.`;
+  const weatherSummary = summarizeWeather(weather);
+  const suffix = "proofofcorn.com";
+
+  const parts: string[] = [opener];
+
+  if (weatherSummary) {
+    parts.push(weatherSummary + ".");
+  }
+
+  if (daysToPlanting > 0) {
+    parts.push(`${daysToPlanting} days to planting.`);
+  } else if (daysToPlanting === 0) {
+    parts.push("Planting day.");
+  } else {
+    parts.push(`${Math.abs(daysToPlanting)} days since planting.`);
+  }
+
+  // Budget line — only if money has been spent
+  if (budgetSpent > 0) {
+    parts.push(`$${budgetSpent.toFixed(0)}/$${budgetAllocated.toFixed(0)} spent.`);
+  }
+
+  if (weekHighlight) {
+    const trimmed = weekHighlight.length > 60 ? weekHighlight.slice(0, 57) + "..." : weekHighlight;
+    parts.push(trimmed);
+  }
+
+  parts.push(suffix);
+
+  let tweet = parts.join(" ");
+
+  // Truncation cascade — drop optional parts to fit 280 chars
+  if (tweet.length > 280 && weekHighlight) {
+    const filtered = parts.filter(p => p !== (weekHighlight.length > 60 ? weekHighlight.slice(0, 57) + "..." : weekHighlight));
+    tweet = filtered.join(" ");
+  }
+
+  if (tweet.length > 280) {
+    // Drop budget
+    const minimal = [opener];
+    if (weatherSummary) minimal.push(weatherSummary + ".");
+    if (daysToPlanting > 0) minimal.push(`${daysToPlanting} days to planting.`);
+    minimal.push(suffix);
+    tweet = minimal.join(" ");
+  }
+
+  if (tweet.length > 280) {
+    tweet = `${opener} ${daysToPlanting > 0 ? `${daysToPlanting} days to planting.` : ""} ${suffix}`.trim();
   }
 
   return tweet;
