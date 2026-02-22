@@ -12,6 +12,7 @@ import { Env } from "./types";
 import { checkEmailSecurity, SecurityCheck } from "./security";
 import { sendAlertToSeth } from "./alerts";
 import { cancelFollowUp } from "./followup";
+import { triageEmail, getSenderRelationship } from "./email-voice";
 
 export interface StoredEmail {
   id: string;
@@ -112,23 +113,33 @@ export async function handleEmail(
       );
     }
 
-    // Auto-create a respond_email task so the next cron cycle picks it up
-    const priority = (category === "lead" || category === "partnership") ? "high" : "medium";
-    const task = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      type: "respond_email" as const,
-      priority,
-      title: `Respond to ${from}: ${subject}`,
-      description: `Respond to ${category} email from ${from}. Subject: "${subject}"`,
-      relatedEmailId: emailId,
-      createdAt: new Date().toISOString(),
-      status: "pending" as const,
-      assignedTo: "fred" as const
-    };
-    await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task), {
-      expirationTtl: 60 * 60 * 24 * 30 // 30 days
-    });
-    console.log(`[Email] Auto-created ${priority} task for ${category} email from ${from}`);
+    // Triage: decide whether to respond, draft, or skip
+    const relationship = await getSenderRelationship(env, from);
+    const triage = triageEmail(category, from, subject, text, relationship);
+    console.log(`[Email] Triage decision for ${from}: ${triage} (category: ${category})`);
+
+    if (triage === "skip") {
+      console.log(`[Email] Skipping — low-value or no reply needed for ${from}`);
+    } else {
+      // "respond" = auto-send OK, "draft" = needs human review
+      const priority = (category === "lead" || category === "partnership") ? "high" : "medium";
+      const isDraft = triage === "draft";
+      const task = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        type: "respond_email" as const,
+        priority,
+        title: `${isDraft ? "[DRAFT] " : ""}Respond to ${from}: ${subject}`,
+        description: `Respond to ${category} email from ${from}. Subject: "${subject}"`,
+        relatedEmailId: emailId,
+        createdAt: new Date().toISOString(),
+        status: isDraft ? ("draft" as any) : ("pending" as const),
+        assignedTo: "fred" as const
+      };
+      await env.FARMER_FRED_KV.put(`task:${task.id}`, JSON.stringify(task), {
+        expirationTtl: 60 * 60 * 24 * 30 // 30 days
+      });
+      console.log(`[Email] Created ${isDraft ? "DRAFT" : "auto-respond"} task (${priority}) for ${category} email from ${from}`);
+    }
   }
 }
 
