@@ -81,6 +81,22 @@ function stripCodeBlocks(text: string): string {
   return text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
 }
 
+/**
+ * Redact personal names from email subjects for public display.
+ * Uses a known-names approach to avoid false positives on place names
+ * like "Iowa", "Purdue", "Union Square" which are meaningful in our context.
+ */
+function redactSubjectNames(subject: string): string {
+  if (!subject || typeof subject !== "string") return "(no subject)";
+  // Strip "[category] " prefix patterns like "[general] ", "Re: [general] ", "Fwd: [general] "
+  let cleaned = subject.replace(/^((?:Re|Fwd):\s*)?(\[[^\]]+\]\s*)+/i, "$1").trim();
+  // Strip "from <Name>" and "Message from <Name>" patterns at end of subject
+  // Only match if preceded by "from" keyword — avoids false positives on place names
+  cleaned = cleaned.replace(/\b(?:message|request|inquiry|email)\s+from\s+\S+.*$/i, "inquiry");
+  cleaned = cleaned.replace(/\bfrom\s+\S+\s*$/i, "");
+  return cleaned.trim() || "(no subject)";
+}
+
 export interface Env {
   ANTHROPIC_API_KEY: string;
   OPENWEATHER_API_KEY: string;
@@ -245,6 +261,10 @@ export default {
           }
 
         case "/inbox":
+          // Require admin auth — full inbox exposes email addresses and bodies
+          if (!verifyAdminAuth(request, env.ADMIN_PASSWORD)) {
+            return json({ error: "Unauthorized. Use /inbox/public for redacted view." }, corsHeaders, 401);
+          }
           return await handleInbox(env, corsHeaders);
 
         case "/inbox/public":
@@ -1322,14 +1342,12 @@ interface Feedback {
 }
 
 async function handleInbox(env: Env, headers: Record<string, string>): Promise<Response> {
-  // Fetch all emails from KV
+  // Fetch all emails from KV concurrently
   const emailKeys = await env.FARMER_FRED_KV.list({ prefix: "email:" });
-  const emails: Email[] = [];
-
-  for (const key of emailKeys.keys) {
-    const email = await env.FARMER_FRED_KV.get(key.name, "json") as Email | null;
-    if (email) emails.push(email);
-  }
+  const results = await Promise.all(
+    emailKeys.keys.map(key => env.FARMER_FRED_KV.get(key.name, "json") as Promise<Email | null>)
+  );
+  const emails = results.filter((e): e is Email => e !== null);
 
   // Sort by received date, newest first
   emails.sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
@@ -1355,12 +1373,10 @@ async function handleInbox(env: Env, headers: Record<string, string>): Promise<R
  */
 async function handleInboxPublic(env: Env, headers: Record<string, string>): Promise<Response> {
   const emailKeys = await env.FARMER_FRED_KV.list({ prefix: "email:" });
-  const emails: Email[] = [];
-
-  for (const key of emailKeys.keys) {
-    const email = await env.FARMER_FRED_KV.get(key.name, "json") as Email | null;
-    if (email) emails.push(email);
-  }
+  const results = await Promise.all(
+    emailKeys.keys.map(key => env.FARMER_FRED_KV.get(key.name, "json") as Promise<Email | null>)
+  );
+  const emails = results.filter((e): e is Email => e !== null);
 
   // Filter out suspicious/spam emails from public view
   const safeEmails = emails.filter(e =>
@@ -1376,7 +1392,7 @@ async function handleInboxPublic(env: Env, headers: Record<string, string>): Pro
   const redactedEmails = safeEmails.map(email => ({
     id: email.id,
     from: redactEmail(email.from),
-    subject: email.subject,
+    subject: redactSubjectNames(email.subject),
     summary: sanitizeEmailBody(email.body, 150),
     receivedAt: email.receivedAt,
     status: email.status,
@@ -1412,12 +1428,10 @@ async function handleInboxPublic(env: Env, headers: Record<string, string>): Pro
  */
 async function handleAdminInbox(env: Env, headers: Record<string, string>): Promise<Response> {
   const emailKeys = await env.FARMER_FRED_KV.list({ prefix: "email:" });
-  const emails: Email[] = [];
-
-  for (const key of emailKeys.keys) {
-    const email = await env.FARMER_FRED_KV.get(key.name, "json") as Email | null;
-    if (email) emails.push(email);
-  }
+  const results = await Promise.all(
+    emailKeys.keys.map(key => env.FARMER_FRED_KV.get(key.name, "json") as Promise<Email | null>)
+  );
+  const emails = results.filter((e): e is Email => e !== null);
 
   // Sort by received date, newest first
   emails.sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
