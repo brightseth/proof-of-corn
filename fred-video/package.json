@@ -1,0 +1,16 @@
+{
+  "name": "fred-video",
+  "version": "1.0.0",
+  "description": "Farmer Fred autonomous video pipeline — HeyGen Video Agent + daily briefs",
+  "type": "module",
+  "scripts": {
+    "generate": "tsx src/index.ts generate --type daily-brief",
+    "listen": "tsx src/index.ts listen",
+    "status": "tsx src/index.ts status",
+    "history": "tsx src/index.ts history"
+  },
+  "dependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

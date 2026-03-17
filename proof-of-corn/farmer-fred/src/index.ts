@@ -759,7 +759,7 @@ Write ONLY your reply text. No quotes.` }],
         console.error("Moltbook heartbeat failed (non-critical):", moltError);
       }
 
-      // Weekly auto-tweet — Monday 12:00 UTC field report
+      // Auto-tweet — every other day at 15:00 UTC (8am CST)
       try {
         const tweetResult = await maybeAutoTweet(env);
         console.log("Auto-tweet check:", tweetResult.reason);
@@ -2826,65 +2826,123 @@ async function handleTweet(request: Request, env: Env, headers: Record<string, s
 // handleOutreachTargets removed — no longer used
 
 /**
- * Autonomous weekly tweet — fires on Monday 12:00 UTC cron tick.
- * Double-post prevention via KV timestamp + day/hour check.
+ * Autonomous auto-tweet — every other day at 12:00 or 18:00 UTC.
+ * Uses Claude to compose varied tweets in Fred's voice.
+ * Double-post prevention via KV timestamp.
  */
 async function maybeAutoTweet(env: Env): Promise<{ posted: boolean; reason: string; tweetUrl?: string }> {
   const now = new Date();
+  const hour = now.getUTCHours();
 
-  // Only fire on Monday at 12:00 UTC (6am CST)
-  if (now.getUTCDay() !== 1 || now.getUTCHours() !== 12) {
-    return { posted: false, reason: `Not Monday 12:00 UTC (day=${now.getUTCDay()}, hour=${now.getUTCHours()})` };
+  // Only fire at 12:00 or 18:00 UTC (morning or noon CST)
+  if (hour !== 12 && hour !== 18) {
+    return { posted: false, reason: `Not a tweet hour (hour=${hour})` };
   }
 
-  // Check last auto-tweet timestamp — must be 7+ days since last
+  // Check last auto-tweet — must be 36+ hours since last (every other day)
   const lastAutoTweet = await env.FARMER_FRED_KV.get("auto-tweet:last");
   if (lastAutoTweet) {
-    const daysSinceLast = (now.getTime() - new Date(lastAutoTweet).getTime()) / (1000 * 60 * 60 * 24);
-    if (daysSinceLast < 7) {
-      return { posted: false, reason: `Last auto-tweet was ${daysSinceLast.toFixed(1)} days ago (need 7+)` };
+    const hoursSinceLast = (now.getTime() - new Date(lastAutoTweet).getTime()) / (1000 * 60 * 60);
+    if (hoursSinceLast < 36) {
+      return { posted: false, reason: `Last auto-tweet was ${hoursSinceLast.toFixed(0)}h ago (need 36+)` };
     }
   }
 
-  // Check X API credentials
   if (!env.X_API_KEY || !env.X_API_SECRET || !env.X_ACCESS_TOKEN || !env.X_ACCESS_TOKEN_SECRET) {
     return { posted: false, reason: "X API credentials not configured" };
   }
 
-  // Gather data for the tweet
-  const { postTweet, composeWeeklyReport } = await import("./twitter");
-
-  let weather: Array<{ region?: string; temp?: number; temperature?: number }> = [];
+  // Gather context for Claude to compose a tweet
+  let weather: Array<{ region?: string; name?: string; temp?: number; temperature?: number; description?: string }> = [];
   try {
     weather = await fetchAllRegionsWeather(env.OPENWEATHER_API_KEY);
-  } catch {
-    // Weather failure is non-fatal
-  }
+  } catch { /* non-fatal */ }
 
-  const budgetData = await env.FARMER_FRED_KV.get("budget", "json") as { spent: number; allocated: number } | null;
-  const budget = budgetData || { spent: 12.99, allocated: 2500 };
+  const plantingDate = new Date("2026-04-25");
+  const daysToPlanting = Math.ceil((plantingDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-  const daysToPlanting = Math.max(0, Math.ceil((new Date("2026-04-11").getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+  const projectStart = new Date("2026-01-21");
+  const projectDay = Math.floor((now.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24));
+  const weekNumber = Math.ceil(projectDay / 7);
 
-  // Get latest decision for week highlight
-  const checkKeys = await env.FARMER_FRED_KV.list({ prefix: "daily-check:" });
-  const latestKey = checkKeys.keys[checkKeys.keys.length - 1];
-  let weekHighlight: string | undefined;
-  if (latestKey) {
-    const check = await env.FARMER_FRED_KV.get(latestKey.name, "json") as { decision?: string } | null;
-    if (check?.decision && typeof check.decision === "string") {
-      weekHighlight = check.decision.slice(0, 60);
+  // Get recent tweet history to avoid repetition
+  const recentTweetKeys = await env.FARMER_FRED_KV.list({ prefix: "log:", limit: 5 });
+  const recentTweets: string[] = [];
+  for (const key of recentTweetKeys.keys) {
+    if (key.name.includes("tweet")) {
+      const entry = await env.FARMER_FRED_KV.get(key.name, "json") as { details?: string } | null;
+      if (entry?.details) recentTweets.push(entry.details.slice(0, 100));
     }
   }
 
-  const tweetText = composeWeeklyReport({
-    weather,
-    daysToPlanting,
-    budgetSpent: budget.spent,
-    budgetAllocated: budget.allocated,
-    weekHighlight,
-  });
+  const weatherLine = weather.length > 0
+    ? weather.map(w => `${w.region || w.name}: ${Math.round(w.temp ?? w.temperature ?? 0)}°F, ${w.description || ""}`).join("; ")
+    : "Weather unavailable";
 
+  // Fred composes his own tweet using his own system prompt and constitution
+  const tweetPrompt = `${SYSTEM_PROMPT}
+
+## Tweet Task
+Compose a single tweet for your @farmerfredai account. Max 260 characters.
+
+CURRENT STATE:
+- Day ${projectDay}, week ${weekNumber}
+- ${daysToPlanting > 0 ? `${daysToPlanting} days until planting window` : "Planting season is here"}
+- Weather: ${weatherLine}
+
+TWEET RULES:
+- Write like you talk. No hashtags. No emojis.
+- Can be: observational, philosophical, countdown, weather, dry humor, a question
+- Vary the format. Sometimes one thought. Sometimes a mini-report.
+- Always end with proofofcorn.com
+- Don't repeat patterns from recent tweets
+
+RECENT TWEETS (avoid these patterns):
+${recentTweets.length > 0 ? recentTweets.join("\n") : "None yet"}
+
+Return ONLY the tweet text. Nothing else.`;
+
+  let tweetText: string;
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 150,
+        messages: [{ role: "user", content: tweetPrompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      return { posted: false, reason: `Claude API error: ${response.status}` };
+    }
+
+    const data = await response.json() as { content: Array<{ text: string }> };
+    tweetText = data.content[0].text.trim();
+
+    // Strip any quotes Claude might wrap around it
+    tweetText = tweetText.replace(/^["']|["']$/g, "").trim();
+
+    if (tweetText.length > 280) {
+      tweetText = tweetText.slice(0, 277) + "...";
+    }
+  } catch (err) {
+    // Fallback to template-based compose
+    const { composeWeeklyReport } = await import("./twitter");
+    tweetText = composeWeeklyReport({
+      weather,
+      daysToPlanting: Math.max(0, daysToPlanting),
+      budgetSpent: 12.99,
+      budgetAllocated: 2500,
+    });
+  }
+
+  const { postTweet } = await import("./twitter");
   const result = await postTweet(tweetText, {
     X_API_KEY: env.X_API_KEY,
     X_API_SECRET: env.X_API_SECRET,
@@ -2893,22 +2951,20 @@ async function maybeAutoTweet(env: Env): Promise<{ posted: boolean; reason: stri
   });
 
   if (result.success) {
-    // Save timestamp to KV
     await env.FARMER_FRED_KV.put("auto-tweet:last", now.toISOString(), {
       expirationTtl: 60 * 60 * 24 * 30,
     });
 
-    // Log it
     const logEntry = createLogEntry(
       "agent",
-      "Weekly Auto-Tweet Posted",
-      `${tweetText}\n\n${result.tweetUrl || ""}`
+      "Auto-Tweet Posted",
+      `Fred tweeted: ${tweetText}\n\n${result.tweetUrl || ""}`
     );
     await env.FARMER_FRED_KV.put(`log:${Date.now()}-auto-tweet`, JSON.stringify(logEntry), {
       expirationTtl: 60 * 60 * 24 * 90,
     });
 
-    return { posted: true, reason: "Weekly field report posted", tweetUrl: result.tweetUrl };
+    return { posted: true, reason: "Auto-tweet posted", tweetUrl: result.tweetUrl };
   }
 
   return { posted: false, reason: `Tweet failed: ${result.error}` };
