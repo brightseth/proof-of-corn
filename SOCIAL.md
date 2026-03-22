@@ -154,7 +154,52 @@ Would love feedback on the approach. Anyone done similar human-AI coordination f
 
 ---
 
+---
+
+## Halter × Proof of Corn — Reactive Thread (March 2026)
+
+**Context**: Halter raised $2B from Peter Thiel for AI cattle management collars. They trademarked their algorithm as "Cowgorithm." Source: @MilkRoadAI, March 22 2026.
+
+### Tweet 1 (Quote-tweet or reply to Halter coverage)
+```
+Peter Thiel just put $2B into an AI collar that manages cattle.
+
+We're doing the same thing for corn — for $3K.
+
+Different species. Same thesis: AI doesn't touch the animal or the plant. It orchestrates the system around it.
+
+proofofcorn.com 🌽
+```
+
+### Tweet 2
+```
+Halter's "Cowgorithm" manages cattle with IoT collars + AI.
+
+Proof of Corn manages crops with soil sensors + Claude Code.
+
+The pattern is the same:
+sensors → data → AI decisions → physical execution
+
+AgTech isn't one vertical. It's a repeating architecture.
+```
+
+### Tweet 3
+```
+The $2B question vs the $3K question:
+
+Halter: Can AI manage 10,000 head of cattle?
+Proof of Corn: Can AI grow 5 acres of corn?
+
+Both answers land in October.
+
+One has Thiel's money. The other has Fred Wilson's challenge.
+
+Let's see who yields better. 🌽🐄
+```
+
+---
+
 ## Hashtags
 
 Primary: #ProofOfCorn #VibeCoding #AI
-Secondary: #AgTech #IoT #ClaudeAI #FutureOfAgriculture
+Secondary: #AgTech #IoT #ClaudeAI #FutureOfAgriculture #Cowgorithm #Halter

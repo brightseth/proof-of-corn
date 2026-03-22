@@ -50,7 +50,9 @@
       "WebFetch(domain:alphalog.ai)",
       "mcp__limitless__searchLifelogs",
       "mcp__gmail__gmail_send",
-      "mcp__granola__search_meetings"
+      "mcp__granola__search_meetings",
+      "mcp__claude_ai_Gmail__gmail_search_messages",
+      "mcp__plugin_telegram_telegram__reply"
     ]
   }
 }

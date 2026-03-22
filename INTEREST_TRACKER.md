@@ -57,7 +57,7 @@
 | Name | Context | Interest Level | Next Step |
 |------|---------|----------------|-----------|
 | Fred Wilson | Original challenger | Watching | Update after first operator signed |
-| - | - | - | - |
+| Halter / Thiel | $2B agtech validation — AI cattle collars ("Cowgorithm") | Market signal | Reactive tweet thread; cite in case study |
 
 ---
 

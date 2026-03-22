@@ -23,3 +23,6 @@ Key skills available in every CC session:
 | `/session-end` | Commit + deploy + wire state sync |
 
 Type `/` to see all available skills.
+
+## Fleet Protocol
+Read `~/.seth/agents/FLEET_PROTOCOL.md` on session start for cross-machine memory and Telegram coordination instructions.
