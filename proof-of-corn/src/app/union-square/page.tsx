@@ -39,8 +39,8 @@ export default function UnionSquarePage() {
             </p>
             <p className="text-lg leading-relaxed">
               A human representative roasts corn and explains: <em>"Farm-to-table, but AI orchestrated. I'm just the hands.
-              The brain is Claude Code running in the cloud. This corn? Planted April 20, irrigated June 3 based on
-              soil moisture data, harvested July 10. Want to see the weather on June 15 when Fred
+              The brain is Claude Code running in the cloud. This corn? Planted in Iowa this spring, monitored and
+              irrigated all summer based on soil and weather data, harvested in late summer. Want to see the day Fred
               decided to water? Scan the QR code."</em>
             </p>
           </div>
@@ -75,48 +75,47 @@ export default function UnionSquarePage() {
           <div className="space-y-6">
             <div className="flex gap-4">
               <div className="w-32 flex-shrink-0 text-sm text-zinc-500 font-mono">
-                NOW - FEB 15
+                FEB 10
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  <span className="font-semibold">Secure land partnership</span>
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  <span className="font-semibold">Land confirmed</span>
                 </div>
                 <p className="text-sm text-zinc-600">
-                  Waiting on responses from Purdue (Indiana), Nebraska, and Zimbabwe partnerships.
-                  Need land confirmed by Feb 15 to hit planting window.
+                  Partnership locked in with Nelson Family Farms, Humboldt County, Iowa. 100x100ft plot,
+                  former cow pasture. Joseph Nelson and the farm crew provide the hands.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="w-32 flex-shrink-0 text-sm text-zinc-500 font-mono">
-                MARCH
+                MAR - APR
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-zinc-300" />
-                  <span className="font-semibold">Deploy IoT sensors + prep soil</span>
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  <span className="font-semibold">Order seed + plan field</span>
                 </div>
                 <p className="text-sm text-zinc-600">
-                  Install soil moisture sensors, weather station, and camera. Test data pipeline.
-                  Fred starts receiving real-time field data.
+                  SH2 sweet corn seed ordered and planting date confirmed with the farm crew.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="w-32 flex-shrink-0 text-sm text-zinc-500 font-mono">
-                APR 20
+                LATE APR - MAY
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-zinc-300" />
-                  <span className="font-semibold">Planting day</span>
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  <span className="font-semibold">Planting complete</span>
                 </div>
                 <p className="text-sm text-zinc-600">
-                  80-day sweet corn variety planted mid-window (April 11-May 18). Fred monitors germination
-                  and makes early irrigation decisions.
+                  Sweet corn planted at Nelson Family Farms this spring. Crew confirmed all corn in the
+                  ground and on track. Fred shifts to germination + early growing-season monitoring.
                 </p>
               </div>
             </div>
@@ -139,23 +138,23 @@ export default function UnionSquarePage() {
 
             <div className="flex gap-4">
               <div className="w-32 flex-shrink-0 text-sm text-zinc-500 font-mono">
-                JUNE 1
+                NOW - JUL
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="w-2 h-2 rounded-full bg-zinc-300" />
-                  <span className="font-semibold">NYC food vendor licensing</span>
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span className="font-semibold">Growing season + NYC permits</span>
                 </div>
                 <p className="text-sm text-zinc-600">
-                  Submit NYC Health Department food vendor permit. Roasting equipment inspection.
-                  Mobile food vending license application.
+                  Crop is up and growing in Iowa. Fred monitors weather, irrigation, and pests through the
+                  summer while the NYC-side vendor/food permits and logistics get lined up for August.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="w-32 flex-shrink-0 text-sm text-zinc-500 font-mono">
-                JULY 10
+                LATE JUL - AUG
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
@@ -163,15 +162,15 @@ export default function UnionSquarePage() {
                   <span className="font-semibold">Harvest</span>
                 </div>
                 <p className="text-sm text-zinc-600">
-                  80 days from planting. Fred coordinates local operator for harvest timing based on
-                  kernel moisture and market readiness. Quality inspection.
+                  Fred coordinates the farm crew on harvest timing based on kernel moisture and market
+                  readiness, then quality inspection. This is the next big milestone.
                 </p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="w-32 flex-shrink-0 text-sm text-zinc-500 font-mono">
-                JULY 15
+                EARLY AUG
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
@@ -179,8 +178,8 @@ export default function UnionSquarePage() {
                   <span className="font-semibold">Transport to NYC</span>
                 </div>
                 <p className="text-sm text-zinc-600">
-                  Refrigerated truck from Nebraska/Indiana to New York City (1,200 miles). Sweet corn is
-                  perishable - 3-4 day window. Cost: ~$2,500.
+                  Refrigerated transport from Iowa to New York City. Sweet corn is perishable &mdash; a tight
+                  few-day window from field to market.
                 </p>
               </div>
             </div>
@@ -269,11 +268,11 @@ export default function UnionSquarePage() {
             <div>
               <h3 className="font-semibold text-red-700 mb-3">HIGH RISK</h3>
               <ul className="space-y-2 text-sm text-zinc-600">
-                <li>• Partnership delays push planting past May 18</li>
-                <li>• Late spring frost destroys crop</li>
-                <li>• Drought or hail damages field</li>
+                <li>• Drought or hail damages the standing crop</li>
+                <li>• Pests (raccoons, deer) hit the plot before harvest</li>
+                <li>• Harvest timing misses peak kernel quality</li>
                 <li>• GrowNYC rejects first-time AI farmer (no precedent)</li>
-                <li>• Corn spoils during 1,200-mile transport</li>
+                <li>• Corn spoils during the long-haul transport to NYC</li>
               </ul>
             </div>
 

@@ -113,7 +113,7 @@ export function CountdownBanner() {
               <span className="text-xs text-blue-600 font-medium">Aug 2, 2026</span>
             </div>
             <p className="text-sm text-blue-800 mb-2">
-              Land confirmed at Nelson Family Farms (Humboldt County, Iowa). 100x100ft plot, planting late April. Sweet corn to NYC.
+              Corn is in the ground at Nelson Family Farms (Humboldt County, Iowa). 100x100ft plot, planted this spring &mdash; now mid-season and growing. Harvest is the next milestone. Sweet corn to NYC.
             </p>
             {latestAction && (
               <p className="text-xs text-blue-700 border-t border-blue-200 pt-2 mt-2">
@@ -233,22 +233,17 @@ export function LiveStatus() {
 }
 
 export function PlantingCountdown() {
-  const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const plantingStart = new Date('2026-04-20T00:00:00');
-    const now = new Date();
-    const diff = Math.ceil((plantingStart.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    setDaysLeft(diff);
+    setMounted(true);
   }, []);
 
-  if (daysLeft === null) return null;
+  if (!mounted) return null;
 
   return (
     <p className="mt-4 text-sm text-zinc-500">
-      {daysLeft > 0
-        ? `${daysLeft} days until Iowa planting window opens`
-        : 'Iowa planting window is open'}
+      Status: planted this spring in Iowa &mdash; crop is up and growing. Mid-season now; harvest is the next milestone.
     </p>
   );
 }
