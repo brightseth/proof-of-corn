@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 const FRED_API = 'https://farmer-fred.sethgoldstein.workers.dev';
-const UNION_SQUARE_DATE = new Date('2026-08-02T00:00:00');
 
 interface LogEntry {
   timestamp: string;
@@ -34,12 +33,6 @@ interface TaskSummary {
   total: number;
   pending: number;
   completed: number;
-}
-
-function getDaysUntil(): number {
-  const now = new Date();
-  const diff = UNION_SQUARE_DATE.getTime() - now.getTime();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
 function formatTimeAgo(timestamp: string): string {
@@ -73,60 +66,6 @@ function extractActionSummary(log: LogEntry): string {
     return desc.split('\n')[0].trim();
   }
   return log.title;
-}
-
-export function CountdownBanner() {
-  const [daysLeft, setDaysLeft] = useState(getDaysUntil());
-  const [latestAction, setLatestAction] = useState<{ text: string; time: string } | null>(null);
-
-  useEffect(() => {
-    const timer = setInterval(() => setDaysLeft(getDaysUntil()), 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    fetch(`${FRED_API}/log`)
-      .then(res => res.json())
-      .then(data => {
-        const logs: LogEntry[] = data?.logs || [];
-        if (logs.length > 0) {
-          const latest = logs[0];
-          setLatestAction({
-            text: extractActionSummary(latest),
-            time: formatTimeAgo(latest.timestamp),
-          });
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  return (
-    <section className="px-6 py-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border-y border-blue-200">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-start gap-4">
-          <div className="text-3xl">🌽</div>
-          <div className="flex-1">
-            <div className="flex items-baseline gap-3 mb-1">
-              <p className="font-bold text-blue-900">
-                <span className="text-2xl tabular-nums">{daysLeft}</span> days until Union Square
-              </p>
-              <span className="text-xs text-blue-600 font-medium">Aug 2, 2026</span>
-            </div>
-            <p className="text-sm text-blue-800 mb-2">
-              Land confirmed at Nelson Family Farms (Humboldt County, Iowa). 100x100ft plot, planting late April. Sweet corn to NYC.
-            </p>
-            {latestAction && (
-              <p className="text-xs text-blue-700 border-t border-blue-200 pt-2 mt-2">
-                <span className="font-medium">Last action</span>{' '}
-                <span className="text-blue-500">({latestAction.time})</span>:{' '}
-                {latestAction.text}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
 }
 
 export function LiveStatus() {
@@ -229,26 +168,5 @@ export function LiveStatus() {
         </Link>
       </div>
     </div>
-  );
-}
-
-export function PlantingCountdown() {
-  const [daysLeft, setDaysLeft] = useState<number | null>(null);
-
-  useEffect(() => {
-    const plantingStart = new Date('2026-04-20T00:00:00');
-    const now = new Date();
-    const diff = Math.ceil((plantingStart.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    setDaysLeft(diff);
-  }, []);
-
-  if (daysLeft === null) return null;
-
-  return (
-    <p className="mt-4 text-sm text-zinc-500">
-      {daysLeft > 0
-        ? `${daysLeft} days until Iowa planting window opens`
-        : 'Iowa planting window is open'}
-    </p>
   );
 }

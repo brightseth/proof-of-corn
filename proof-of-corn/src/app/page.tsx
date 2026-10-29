@@ -3,7 +3,8 @@ import Link from "next/link";
 import FredWidget from "@/components/FredWidget";
 import FredMiniWidget from "@/components/FredMiniWidget";
 import { ContactFred } from "@/components/ContactFred";
-import { CountdownBanner, LiveStatus, PlantingCountdown } from "@/components/HomePageLive";
+import { LiveStatus } from "@/components/HomePageLive";
+import { HNMilestone } from "@/components/HNMilestone";
 
 export const metadata: Metadata = {
   title: "Proof of Corn",
@@ -52,20 +53,19 @@ export default function Home() {
             AI can write code, but it can&apos;t affect the physical world.
           </p>
           <p className="text-xl text-zinc-600 leading-relaxed">
-            This is our response. Real corn, grown from seed to harvest,
-            with every decision made by Claude Code.
+            This is our response: an attempt to grow real corn with every
+            decision made by Claude Code.
           </p>
           <div className="mt-8">
             <Link href="/about" className="text-amber-600 hover:underline">
               Read the full story →
             </Link>
           </div>
-          <PlantingCountdown />
         </div>
       </section>
 
-      {/* Countdown Banner - Union Square */}
-      <CountdownBanner />
+      {/* Milestone - Hacker News */}
+      <HNMilestone />
 
       {/* The Thesis */}
       <section className="px-6 py-16 border-b border-zinc-200">
@@ -182,16 +182,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Union Square Goal - AI to Table */}
+      {/* Original plan - AI to Table */}
       <section className="px-6 py-12 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border-y border-blue-200">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-start gap-4">
             <div className="text-3xl">🌽</div>
             <div>
-              <p className="font-bold text-blue-900 mb-1">AI to Table: Union Square, NYC</p>
+              <p className="font-bold text-blue-900 mb-1">The original plan: AI to Table</p>
               <p className="text-sm text-blue-800 mb-3">
-                Target: <strong>August 2, 2026</strong>. Sweet corn grown at Nelson Family Farms (Humboldt County, Iowa),
-                harvested and brought to Union Square NYC. Farm-to-table, orchestrated by AI.
+                As written in early 2026: sweet corn from Nelson Family Farms (Humboldt County, Iowa),
+                brought to Union Square, NYC. Farm-to-table, orchestrated by AI.
               </p>
               <div className="flex gap-2 flex-wrap text-xs">
                 <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
@@ -205,7 +205,7 @@ export default function Home() {
                 </span>
               </div>
               <Link href="/union-square" className="inline-block mt-3 text-sm text-blue-900 font-medium hover:underline">
-                See full AI to Table timeline →
+                Read the original AI to Table plan →
               </Link>
             </div>
           </div>
@@ -219,16 +219,15 @@ export default function Home() {
 
           <div className="space-y-6">
             {[
+              { date: "Jan 21, 2026", event: "Fred Wilson: \u201cWell, you can\u2019t grow corn.\u201d", status: "done" },
               { date: "Jan 22, 2026", event: "Challenge accepted", status: "done" },
-              { date: "Jan 22-25", event: "Site launched, hit #1 HN, Fred goes autonomous", status: "done" },
+              { date: "Jan 23, 2026", event: "#1 on Hacker News \u2014 476 points, 307 comments", status: "done" },
               { date: "Jan 26 - Feb 8", event: "Fred goes autonomous: email, voice, X/Twitter, research", status: "done" },
-              { date: "Feb 10", event: "Land confirmed — Nelson Family Farms, Humboldt County, Iowa", status: "done" },
-              { date: "Feb-Mar", event: "Order seed, confirm planting date with Dan the farmhand", status: "active" },
-              { date: "Late Apr", event: "Plant sweet corn (100x100ft plot, former cow pasture)", status: "pending" },
-              { date: "May - Aug", event: "Growing season — AI monitoring, raccoon fence, irrigation", status: "pending" },
-              { date: "Early Aug", event: "Harvest sweet corn", status: "pending" },
-              { date: "Aug 2, 2026", event: "Union Square NYC — AI-grown corn, seed to table", status: "goal" },
-              { date: "Oct 16-17", event: "Proof of Cornfest — harvest event at Nelson Family Farms", status: "pending" },
+              { date: "Feb 10", event: "Land confirmed \u2014 Nelson Family Farms, Humboldt County, Iowa", status: "done" },
+              { date: "Spring", event: "Plan: order seed, plant sweet corn on a 100x100ft plot", status: "planned" },
+              { date: "Summer", event: "Plan: AI monitoring through the growing season", status: "planned" },
+              { date: "Aug 2", event: "Plan: Union Square NYC, seed to table", status: "planned" },
+              { date: "Oct 16-17", event: "Plan: Proof of Cornfest at Nelson Family Farms", status: "planned" },
             ].map((item, i) => (
               <div key={i} className="flex gap-4">
                 <div className="w-32 flex-shrink-0 text-sm text-zinc-500">
@@ -236,17 +235,18 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`w-2 h-2 rounded-full ${
-                    item.status === 'done' ? 'bg-green-500' :
-                    item.status === 'active' ? 'bg-amber-500' :
-                    item.status === 'goal' ? 'bg-blue-500' : 'bg-zinc-300'
+                    item.status === 'done' ? 'bg-green-500' : 'bg-zinc-300'
                   }`} />
-                  <span className={item.status === 'pending' ? 'text-zinc-500' : ''}>
+                  <span className={item.status === 'planned' ? 'text-zinc-500' : ''}>
                     {item.event}
                   </span>
                 </div>
               </div>
             ))}
           </div>
+          <p className="mt-8 text-sm text-zinc-500">
+            Items marked &ldquo;Plan&rdquo; are shown as written in early 2026.
+          </p>
         </div>
       </section>
 
@@ -303,7 +303,7 @@ export default function Home() {
             orchestrated by Claude Code (Opus 4.6)
           </p>
           <p>
-            Want to help? Iowa land leads, ag expertise, vibe coders welcome:{" "}
+            Get in touch:{" "}
             <a href="mailto:fred@proofofcorn.com" className="text-amber-600 hover:underline">fred@proofofcorn.com</a>
           </p>
         </div>

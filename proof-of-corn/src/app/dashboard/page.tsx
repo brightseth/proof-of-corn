@@ -1059,10 +1059,10 @@ export default function DashboardPage() {
         <div className="flex items-start gap-4">
           <div className="text-4xl">🌽</div>
           <div className="flex-1">
-            <h3 className="text-2xl font-bold text-blue-900 mb-2">AI to Table</h3>
+            <h3 className="text-2xl font-bold text-blue-900 mb-2">AI to Table (original plan)</h3>
             <p className="text-blue-800 mb-4">
-              <strong>Target: August 2, 2026</strong> — Fred&apos;s first ear of roasted corn, grown autonomously from seed to harvest,
-              sold at Union Square Greenmarket in NYC. Farm-to-table, but orchestrated by AI.
+              As written in early 2026: Fred&apos;s first ear of roasted corn, sold at Union Square Greenmarket
+              in NYC on August 2, 2026. Farm-to-table, but orchestrated by AI. Kept here as an archive of the plan.
             </p>
             <div className="flex flex-wrap gap-2 text-xs">
               <span className="px-3 py-1 bg-white rounded-full text-blue-900 border border-blue-200">
@@ -1087,7 +1087,7 @@ export default function DashboardPage() {
 
       {/* Timeline */}
       <section className="bg-white border border-zinc-200 rounded-lg p-6">
-        <h3 className="font-bold text-lg mb-4">Timeline to August 2, 2026</h3>
+        <h3 className="font-bold text-lg mb-4">Planned timeline (as written in early 2026)</h3>
         <div className="space-y-4">
           {[
             { date: 'NOW - FEB 15', status: 'active', milestone: 'Secure land partnership', detail: 'Waiting on Purdue (IN), Nebraska, Zimbabwe responses' },
@@ -1240,7 +1240,7 @@ export default function DashboardPage() {
           href="/union-square"
           className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
         >
-          View Full Union Square Plan →
+          View the Original Union Square Plan →
         </a>
       </section>
     </div>
