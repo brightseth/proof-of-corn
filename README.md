@@ -6,6 +6,8 @@ A case study in vibe coding and autonomous orchestration.
 
 **Live site**: [proofofcorn.com](https://proofofcorn.com)
 
+**#1 on Hacker News** · 476 points, 307 comments · Jan 23, 2026 · [read the thread](https://news.ycombinator.com/item?id=46735511)
+
 ---
 
 ## The Origin

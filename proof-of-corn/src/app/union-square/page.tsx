@@ -4,7 +4,7 @@ import PageLayout from "@/components/PageLayout";
 
 export const metadata: Metadata = {
   title: "AI to Table | Proof of Corn",
-  description: "AI to Table: Farmer Fred's mission to sell his first ear of roasted corn at Union Square Farmers Market, NYC - August 2026.",
+  description: "AI to Table: the original early-2026 plan for Farmer Fred to bring corn to Union Square Farmers Market, NYC.",
 };
 
 export default function UnionSquarePage() {
@@ -13,13 +13,17 @@ export default function UnionSquarePage() {
       <div className="max-w-3xl mx-auto">
         {/* Hero */}
         <div className="mb-12">
-          <p className="text-amber-700 text-sm tracking-wide mb-4">THE GOAL</p>
+          <p className="text-amber-700 text-sm tracking-wide mb-4">THE ORIGINAL PLAN</p>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
             AI to Table
           </h1>
           <p className="text-xl text-zinc-600 leading-relaxed mb-4">
-            Target date: <strong>August 2, 2026</strong>. Farmer Fred's first ear of roasted corn,
-            grown autonomously from seed to harvest, sold at Union Square Greenmarket in New York City.
+            The plan as written in early 2026: Farmer Fred&apos;s first ear of roasted corn,
+            grown from seed with every decision made by AI, sold at Union Square Greenmarket in New York City
+            on August 2, 2026.
+          </p>
+          <p className="text-sm text-zinc-500 mb-4">
+            This page is kept as an archive of that plan. Dates and estimates below are as originally written.
           </p>
           <p className="text-lg text-zinc-500 leading-relaxed italic">
             Farm-to-table, but orchestrated by AI. Every decision—planting, irrigation, harvest—made
